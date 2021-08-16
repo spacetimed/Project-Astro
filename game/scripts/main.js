@@ -1,53 +1,52 @@
 var canvas;
 var ctx;
 var initialized = false;
-var movement = {};
-var player = {};
+var currentFrameTime = 0;
+var lastFrameTimestamp = 0;
 
+const GAME_WIDTH = 900;
+const GAME_HEIGHT = 600;
+const SPEED = 500; //Pixels per Second (px/s) -- (will accomodate for differing frametimes [ms])
+const imagePath = 'images/';
+
+var movement = {};
 movement.move_posY = false;
 movement.move_negY = false;
 movement.move_posX = false;
 movement.move_negX = false;
 
-const GAME_WIDTH = 900;
-const GAME_HEIGHT = 600;
-const SPEED = 100; //Pixels per Second (will accomodate for differing frametimes [ms])
+var player = {};
 player.x_size = 30;
 player.y_size = 30;
 
+var crosshair = {};
+
+var resources = {};
+resources.crosshair = imagePath + 'crosshair.png';
+resources.container = {};
+resources.ability1 = {};
+resources.ability2 = {};
+resources.hud = {};
+
 window.addEventListener('DOMContentLoaded', (event) => {
-    document.addEventListener('keydown', keyDownHandler, false);
-    document.addEventListener('keyup', keyUpHandler, false);
     astro();
 });
 
-var first = true;
-var startTime = 0;
-var end = false;
-var startDistance = 0;
+function logger(message)
+{
+    console.log("%c[Astro-Log] %c" + message, "color:red;", "");
+}
+
+function welcomeToAstro()
+{
+    console.log("%cProject-Astro", "color:purple;font-family:'Courier New';font-size:24px;font-weight:700;");
+    logger("Initialization Complete");
+}
 
 function isValidBoundary(direction)
 {
     if( (direction == 'moveUp') && (player.y > player.y_size) )
     {
-        if(end)
-            return;
-        if(first)
-        {
-            startDistance = player.y;
-            startTime = Date.now();
-            console.log("Started");
-            first = false;
-        }
-        const secondsPassed = (Date.now() - startTime) / 1000;
-        if(secondsPassed >= 1)
-        {
-            end = true;
-            const distanceTrav = player.y - startDistance;
-            console.log("Seconds Passed\t" + secondsPassed);
-            console.log("Distance (px)\t" + distanceTrav.toFixed(3));
-            console.log("Frametime (ms)\t" + currentFrameTime);
-        }
         return true;
     }
 
@@ -65,15 +64,12 @@ function isValidBoundary(direction)
     {
         return true;
     }
-
-    console.log("Bad movement");
     return false;
 }
 
 function keyDownHandler(e)
 {
     const key = e.code;
-
     switch(key)
     {
         case 'KeyW':
@@ -89,12 +85,12 @@ function keyDownHandler(e)
             movement.move_posX = true;
             break;
     }
+    return;
 }
 
 function keyUpHandler(e)
 {
     const key = e.code;
-
     switch(key)
     {
         case 'KeyW':
@@ -110,40 +106,8 @@ function keyUpHandler(e)
             movement.move_posX = false;
             break;
     }
+    return;
 }
-
-var currentFrameTime = 0;
-var lastFrameTimestamp = 0;
-
-function astro(timestamp)
-{ 
-    timestamp = timestamp || 0;
-    currentFrameTime = (timestamp - lastFrameTimestamp); // avg ~0.069
-    lastFrameTimestamp = timestamp;
-
-    canvas = document.getElementById('gameContainer');
-    ctx = canvas.getContext('2d');
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
-    if(!initialized)
-    {
-        player.x = GAME_WIDTH / 4;
-        player.y = GAME_HEIGHT / 2;
-        initialized = true;
-    }
-    
-    handleMovement();
-    renderPlayer();
-
-    window.requestAnimationFrame(astro);
-}
-
-//With a frametime of 6.9ms, (0.069 s)
-//to move 10px per sec?
-//How much should you move in a given frame to move 10 pixels in 1 second?
-// X = 10*0.069 <--- Move this amount in each frame.
-//         ^ currentFrameTime
 
 function handleMovement()
 {
@@ -174,12 +138,73 @@ function handleMovement()
     } else {
         movement.move_negX = false;
     }
-
-
+    return;
 }
 
 function renderPlayer()
 {
     ctx.fillStyle = 'white'; 
     ctx.fillRect(player.x - player.x_size, player.y - player.y_size, player.x_size, player.y_size); 
+    return;
+}
+
+function renderCrosshair()
+{
+    if(crosshair.constructor.name == 'HTMLImageElement')
+    {
+        ctx.drawImage(crosshair, 10, 10);
+        return true;
+    }
+    return false;
+}
+
+function boot()
+{
+    player.x = GAME_WIDTH / 4;
+    player.y = GAME_HEIGHT / 2;
+    crosshair = new Image();
+    crosshair.src = resources.crosshair;
+    crosshair.addEventListener('load', function() {
+        renderCrosshair();
+    }, false);
+    
+    resources.container = document.getElementsByClassName('astroContainer')[0];
+    resources.hud = document.createElement('div');
+    resources.ability1 = document.createElement('div');
+    resources.ability2 = document.createElement('div');
+    
+    resources.hud.className = 'astroHud';
+    resources.ability1.className = 'astroAbility';
+    resources.ability2.className = 'astroAbility';
+    
+    resources.hud.append(resources.ability1);
+    resources.hud.append(resources.ability2);
+    resources.container.prepend(resources.hud);
+
+    document.addEventListener('keydown', keyDownHandler, false);
+    document.addEventListener('keyup', keyUpHandler, false);
+    
+    initialized = true;
+    welcomeToAstro();
+}
+
+function astro(timestamp)
+{ 
+    timestamp = timestamp || 0;
+    currentFrameTime = (timestamp - lastFrameTimestamp); // avg ~0.069 @ 144hz
+    lastFrameTimestamp = timestamp;
+
+    canvas = document.getElementById('gameContainer');
+    ctx = canvas.getContext('2d');
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
+
+    if(!initialized)
+        boot();
+    
+    window.requestAnimationFrame(astro);
+    
+    handleMovement();
+    renderPlayer();
+    renderCrosshair();
 }
