@@ -3,10 +3,11 @@ var ctx;
 var initialized = false;
 var currentFrameTime = 0;
 var lastFrameTimestamp = 0;
+var GLOBAL_timestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 500; //Pixels per Second (px/s) -- (will accomodate for differing frametimes [ms])
+const SPEED = 400; //Pixels per Second (px/s) -- (will accomodate for differing frametimes [ms])
 const imagePath = 'images/';
 
 var movement = {};
@@ -20,13 +21,29 @@ player.x_size = 30;
 player.y_size = 30;
 
 var crosshair = {};
+var marker = {};
 
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
+resources.marker = imagePath + 'marker.png';
 resources.container = {};
+resources.ability0 = {};
 resources.ability1 = {};
-resources.ability2 = {};
 resources.hud = {};
+
+var abilities = {};
+abilities[0] = {};
+abilities[0].name = 'fireball';
+abilities[0].active = false;
+
+var cursorPos = {};
+var pendingClick = false;
+var lastClickAt = 0;
+cursorPos.x = 0;
+cursorPos.y = 0;
+cursorPos.last = {};
+cursorPos.last.x = 0;
+cursorPos.last.y = 0;
 
 window.addEventListener('DOMContentLoaded', (event) => {
     astro();
@@ -34,13 +51,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 function logger(message)
 {
-    console.log("%c[Astro-Log] %c" + message, "color:red;", "");
+    console.log('%c[Astro-Log] %c' + message, 'color:red;', '');
 }
 
 function welcomeToAstro()
 {
-    console.log("%cProject-Astro", "color:purple;font-family:'Courier New';font-size:24px;font-weight:700;");
-    logger("Initialization Complete");
+    console.log('%cProject-Astro', 'color:purple;font-family:\'Courier New\';font-size:24px;font-weight:700;');
+    logger('Initialization Complete');
 }
 
 function isValidBoundary(direction)
@@ -109,6 +126,27 @@ function keyUpHandler(e)
     return;
 }
 
+function mouseMoveHandler(e)
+{
+    cursorPos.x = e.offsetX;
+    cursorPos.y = e.offsetY;
+}
+
+function mouseClickHandler(e)
+{
+    for(a in abilities)
+    {
+        if(abilities[a].active)
+        {
+            pendingClick = true;
+            lastClickAt = GLOBAL_timestamp;
+            cursorPos.last.x = e.offsetX;
+            cursorPos.last.y = e.offsetY;
+            return;
+        }
+    }
+}
+
 function handleMovement()
 {
     if(movement.move_posY && Boolean(isValidBoundary('moveUp')))
@@ -152,7 +190,17 @@ function renderCrosshair()
 {
     if(crosshair.constructor.name == 'HTMLImageElement')
     {
-        ctx.drawImage(crosshair, 10, 10);
+        ctx.drawImage(crosshair, cursorPos.x, cursorPos.y);
+        return true;
+    }
+    return false;
+}
+
+function renderMarker()
+{
+    if(marker.constructor.name == 'HTMLImageElement')
+    {
+        ctx.drawImage(marker, cursorPos.last.x, cursorPos.last.y);
         return true;
     }
     return false;
@@ -163,26 +211,47 @@ function boot()
     player.x = GAME_WIDTH / 4;
     player.y = GAME_HEIGHT / 2;
     crosshair = new Image();
+    marker = new Image();
     crosshair.src = resources.crosshair;
-    crosshair.addEventListener('load', function() {
-        renderCrosshair();
-    }, false);
+    marker.src = resources.marker;
+    
+    /*crosshair.addEventListener('load', function() {
+        //renderCrosshair();
+    }, false); */
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
     resources.hud = document.createElement('div');
+    resources.ability0 = document.createElement('div');
     resources.ability1 = document.createElement('div');
-    resources.ability2 = document.createElement('div');
     
     resources.hud.className = 'astroHud';
+    resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
-    resources.ability2.className = 'astroAbility';
     
+    resources.hud.append(resources.ability0);
     resources.hud.append(resources.ability1);
-    resources.hud.append(resources.ability2);
     resources.container.prepend(resources.hud);
+
+    abilities[0].element = resources.ability0;
 
     document.addEventListener('keydown', keyDownHandler, false);
     document.addEventListener('keyup', keyUpHandler, false);
+    canvas.addEventListener('mousemove', mouseMoveHandler, false);
+    canvas.addEventListener('click', mouseClickHandler, false);
+
+    resources.ability0.addEventListener('click', (event) => {
+        abilities[0].active = (abilities[0].active) ? false : true;
+        if(abilities[0].active)
+        {
+            resources.container.style.cursor = 'none';
+            abilities[0].element.style.border = '2px solid #27ff00';
+            abilities[0].element.style.boxShadow = '0px 0px 3px 3px #27ff00';
+        } else {
+            resources.container.style.cursor = 'default';
+            abilities[0].element.style.border = '2px solid rgba(255,255,255)';
+            abilities[0].element.style.removeProperty('box-shadow');
+        }
+    });
     
     initialized = true;
     welcomeToAstro();
@@ -191,6 +260,7 @@ function boot()
 function astro(timestamp)
 { 
     timestamp = timestamp || 0;
+    GLOBAL_timestamp = timestamp;
     currentFrameTime = (timestamp - lastFrameTimestamp); // avg ~0.069 @ 144hz
     lastFrameTimestamp = timestamp;
 
@@ -206,5 +276,17 @@ function astro(timestamp)
     
     handleMovement();
     renderPlayer();
-    renderCrosshair();
+
+    if(pendingClick && ((timestamp - lastClickAt) < 500))
+        renderMarker();
+
+    for(a in abilities)
+    {
+        if(abilities[a].active)
+        {
+            renderCrosshair();
+        }
+    }
+
+
 }
