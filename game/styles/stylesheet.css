@@ -57,7 +57,7 @@ body {
 }
 
 .astroContainer #gameContainer {
-    /* background-image:url('../images/backdrop.png'); */
+    background-image:url('../images/backdrop.png');
     background-repeat:no-repeat;
     background-color:#000;
     z-index:10;

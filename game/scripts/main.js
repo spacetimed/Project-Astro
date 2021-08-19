@@ -1,13 +1,13 @@
+var initialized = false; 
 var canvas;
 var ctx;
-var initialized = false;
+var GLOBAL_timestamp = 0;
 var currentFrameTime = 0;
 var lastFrameTimestamp = 0;
-var GLOBAL_timestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 400; //Pixels per Second (px/s) -- (will accomodate for differing frametimes [ms])
+const SPEED = 400; //Pixels per Second (px/s)
 const imagePath = 'images/';
 
 var movement = {};
@@ -158,26 +158,20 @@ function mouseClickHandler(e)
 
 function fireAbility(a, x, y)
 {
-    console.log('Fire ability, ', a, abilities[a].name);
     if(a == 0)
+    {
         abilityAnimationQueues.fireball.queued = true;
         abilityAnimationQueues.fireball.x = x;
         abilityAnimationQueues.fireball.y = y;
+    }
 }
-
-/*
-1. Distance(d)  between point A(x,y) and B(x,y)
-2. r = d/2
-3. x^2 + y^2 = r
-4. x = r*cos(t)
-5. y = r*sin(t)
-*/
 
 var fireball = {};
 var t = false;
-
+var fireballAnimationComplete = false;
 function showFireballAnimation()
 {
+    const AnimationSpeed = 10;
     let newAnim = (abilityAnimationQueues.fireball.x != fireball.x_end) ? true : false;
     fireball.x_0 = player.x;
     fireball.y_0 = player.y;
@@ -187,31 +181,22 @@ function showFireballAnimation()
     fireball.y_center = fireball.y_0 + (fireball.y_end - fireball.y_0) / 2;
     fireball.distance = Math.sqrt( (fireball.x_end - fireball.x_0)**2 + (fireball.y_end - fireball.y_0)**2 );
     fireball.radius = fireball.distance / 2;
-    fireball.x_equation = fireball.x_center + fireball.radius * Math.cos(t);
-    fireball.y_equation = fireball.y_center + fireball.radius * Math.sin(t);
     fireball.theta = Math.atan((fireball.y_end - fireball.y_0) / (fireball.x_end - fireball.x_0));
     fireball.t_min = fireball.theta + Math.PI;
     fireball.t_max = fireball.theta + Math.PI*2;
     let reverse = (fireball.x_end < fireball.x_0) ? true : false;
-
-    // (theta + pi) <= t <= (theta + 2pi) -> Arc Function
-
     if(newAnim)
         t = (!reverse) ? fireball.t_min : fireball.t_max;
-    t = (!reverse) ? (t + 0.05) : (t - 0.05);
-    if(!reverse && t >= fireball.t_max)
-        t = fireball.t_min;
-    else if(t <= fireball.t_min)
-        t = fireball.t_max;
-
-    ctx.fillStyle = 'red'; 
-    ctx.fillRect(fireball.x_end, fireball.y_end, 10, 10); 
-    ctx.fillStyle = 'green'; 
-    ctx.fillRect(fireball.x_center, fireball.y_center, 10, 10); 
+    t = (!reverse) ? (t + (AnimationSpeed * currentFrameTime / 1000)) : (t - (AnimationSpeed * currentFrameTime / 1000));
+    if((!reverse && t >= fireball.t_max) || (reverse && t <= fireball.t_min))
+    {
+        abilityAnimationQueues.fireball.queued = false; 
+        fireball.x_end = 0;
+    }
+    fireball.x_equation = fireball.x_center + fireball.radius * Math.cos(t);
+    fireball.y_equation = fireball.y_center + fireball.radius * Math.sin(t);
     ctx.fillStyle = 'yellow'; 
     ctx.fillRect(fireball.x_equation, fireball.y_equation, 10, 10); 
-
-    return;
 }
 
 function handleMovement()
@@ -256,21 +241,13 @@ function renderPlayer()
 function renderCrosshair()
 {
     if(crosshair.constructor.name == 'HTMLImageElement')
-    {
         ctx.drawImage(crosshair, cursorPos.x, cursorPos.y);
-        return true;
-    }
-    return false;
 }
 
 function renderMarker()
 {
     if(marker.constructor.name == 'HTMLImageElement')
-    {
         ctx.drawImage(marker, cursorPos.last.x, cursorPos.last.y);
-        return true;
-    }
-    return false;
 }
 
 function boot()
@@ -279,10 +256,6 @@ function boot()
     marker = new Image();
     crosshair.src = resources.crosshair;
     marker.src = resources.marker;
-    
-    /*crosshair.addEventListener('load', function() {
-        //renderCrosshair();
-    }, false); */
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
     resources.hud = document.createElement('div');
@@ -326,7 +299,7 @@ function astro(timestamp)
 { 
     timestamp = timestamp || 0;
     GLOBAL_timestamp = timestamp;
-    currentFrameTime = (timestamp - lastFrameTimestamp); // avg ~0.069 @ 144hz
+    currentFrameTime = (timestamp - lastFrameTimestamp); 
     lastFrameTimestamp = timestamp;
 
     canvas = document.getElementById('gameContainer');
@@ -348,15 +321,9 @@ function astro(timestamp)
     for(a in abilities)
     {
         if(abilities[a].active)
-        {
             renderCrosshair();
-        }
     }
 
     if(abilityAnimationQueues.fireball.queued)
-    {
         showFireballAnimation();
-    }
-
-
 }
