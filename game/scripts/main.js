@@ -19,6 +19,8 @@ movement.move_negX = false;
 var player = {};
 player.x_size = 30;
 player.y_size = 30;
+player.x = GAME_WIDTH / 4;
+player.y = GAME_HEIGHT / 2;
 
 var crosshair = {};
 var marker = {};
@@ -44,6 +46,12 @@ cursorPos.y = 0;
 cursorPos.last = {};
 cursorPos.last.x = 0;
 cursorPos.last.y = 0;
+
+var abilityAnimationQueues = {};
+abilityAnimationQueues.fireball = {};
+abilityAnimationQueues.fireball.queued = false;
+abilityAnimationQueues.fireball.x = 0;
+abilityAnimationQueues.fireball.y = 0;
 
 window.addEventListener('DOMContentLoaded', (event) => {
     astro();
@@ -142,9 +150,68 @@ function mouseClickHandler(e)
             lastClickAt = GLOBAL_timestamp;
             cursorPos.last.x = e.offsetX;
             cursorPos.last.y = e.offsetY;
+            fireAbility(a, e.offsetX, e.offsetY);
             return;
         }
     }
+}
+
+function fireAbility(a, x, y)
+{
+    console.log('Fire ability, ', a, abilities[a].name);
+    if(a == 0)
+        abilityAnimationQueues.fireball.queued = true;
+        abilityAnimationQueues.fireball.x = x;
+        abilityAnimationQueues.fireball.y = y;
+}
+
+/*
+1. Distance(d)  between point A(x,y) and B(x,y)
+2. r = d/2
+3. x^2 + y^2 = r
+4. x = r*cos(t)
+5. y = r*sin(t)
+*/
+
+var fireball = {};
+var t = false;
+
+function showFireballAnimation()
+{
+    let newAnim = (abilityAnimationQueues.fireball.x != fireball.x_end) ? true : false;
+    fireball.x_0 = player.x;
+    fireball.y_0 = player.y;
+    fireball.x_end = abilityAnimationQueues.fireball.x;
+    fireball.y_end = abilityAnimationQueues.fireball.y;
+    fireball.x_center = fireball.x_0 + (fireball.x_end - fireball.x_0) / 2;
+    fireball.y_center = fireball.y_0 + (fireball.y_end - fireball.y_0) / 2;
+    fireball.distance = Math.sqrt( (fireball.x_end - fireball.x_0)**2 + (fireball.y_end - fireball.y_0)**2 );
+    fireball.radius = fireball.distance / 2;
+    fireball.x_equation = fireball.x_center + fireball.radius * Math.cos(t);
+    fireball.y_equation = fireball.y_center + fireball.radius * Math.sin(t);
+    fireball.theta = Math.atan((fireball.y_end - fireball.y_0) / (fireball.x_end - fireball.x_0));
+    fireball.t_min = fireball.theta + Math.PI;
+    fireball.t_max = fireball.theta + Math.PI*2;
+    let reverse = (fireball.x_end < fireball.x_0) ? true : false;
+
+    // (theta + pi) <= t <= (theta + 2pi) -> Arc Function
+
+    if(newAnim)
+        t = (!reverse) ? fireball.t_min : fireball.t_max;
+    t = (!reverse) ? (t + 0.05) : (t - 0.05);
+    if(!reverse && t >= fireball.t_max)
+        t = fireball.t_min;
+    else if(t <= fireball.t_min)
+        t = fireball.t_max;
+
+    ctx.fillStyle = 'red'; 
+    ctx.fillRect(fireball.x_end, fireball.y_end, 10, 10); 
+    ctx.fillStyle = 'green'; 
+    ctx.fillRect(fireball.x_center, fireball.y_center, 10, 10); 
+    ctx.fillStyle = 'yellow'; 
+    ctx.fillRect(fireball.x_equation, fireball.y_equation, 10, 10); 
+
+    return;
 }
 
 function handleMovement()
@@ -208,8 +275,6 @@ function renderMarker()
 
 function boot()
 {
-    player.x = GAME_WIDTH / 4;
-    player.y = GAME_HEIGHT / 2;
     crosshair = new Image();
     marker = new Image();
     crosshair.src = resources.crosshair;
@@ -286,6 +351,11 @@ function astro(timestamp)
         {
             renderCrosshair();
         }
+    }
+
+    if(abilityAnimationQueues.fireball.queued)
+    {
+        showFireballAnimation();
     }
 
 
