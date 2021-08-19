@@ -22,6 +22,12 @@ player.y_size = 30;
 player.x = GAME_WIDTH / 4;
 player.y = GAME_HEIGHT / 2;
 
+var opponent = {};
+opponent.x_size = 30;
+opponent.y_size = 30;
+opponent.x = (GAME_WIDTH * 3/4) + (opponent.x_size / 2);
+opponent.y = (GAME_HEIGHT / 2) + (opponent.y_size / 2);
+
 var crosshair = {};
 var marker = {};
 
@@ -70,22 +76,22 @@ function welcomeToAstro()
 
 function isValidBoundary(direction)
 {
-    if( (direction == 'moveUp') && (player.y > player.y_size) )
+    if( (direction == 'moveUp') && (player.y > (player.y_size / 2)) )
     {
         return true;
     }
 
-    if( (direction == 'moveDown') && (player.y < GAME_HEIGHT) )
+    if( (direction == 'moveDown') && (player.y < GAME_HEIGHT - (player.y_size / 2)) )
     {
         return true;
     }
 
-    if( (direction == 'moveRight') && (player.x < GAME_WIDTH) )
+    if( (direction == 'moveRight') && (player.x < GAME_WIDTH - (player.x_size / 2) ) )
     {
         return true;
     }
 
-    if( (direction == 'moveLeft') && (player.x > player.x_size) )
+    if( (direction == 'moveLeft') && (player.x > (player.x_size / 2)) )
     {
         return true;
     }
@@ -163,7 +169,18 @@ function fireAbility(a, x, y)
         abilityAnimationQueues.fireball.queued = true;
         abilityAnimationQueues.fireball.x = x;
         abilityAnimationQueues.fireball.y = y;
+        handleCollisionDetection(a, x, y);
     }
+}
+
+function handleCollisionDetection(a, x, y)
+{
+    console.log(a, x, y);
+
+/*     console.log('OpponentX=>', opponent.x)
+    console.log('OpponentY=>', opponent.y)
+    console.log('OpponentX_Width=>', opponent.x_size)
+    console.log('OpponentY_Width=>', opponent.y_size) */
 }
 
 var fireball = {};
@@ -223,6 +240,7 @@ function handleMovement()
     }
     
     if(movement.move_negX && Boolean(isValidBoundary('moveLeft')))
+    //if(movement.move_negX)
     {
         player.x -= SPEED * currentFrameTime / 1000;
     } else {
@@ -234,7 +252,14 @@ function handleMovement()
 function renderPlayer()
 {
     ctx.fillStyle = 'white'; 
-    ctx.fillRect(player.x - player.x_size, player.y - player.y_size, player.x_size, player.y_size); 
+    ctx.fillRect(player.x - player.x_size / 2, player.y - player.y_size / 2, player.x_size, player.y_size); 
+    return;
+}
+
+function renderOpponent()
+{
+    ctx.fillStyle = 'red'; 
+    ctx.fillRect(opponent.x - opponent.x_size, opponent.y - opponent.y_size, opponent.x_size, opponent.y_size); 
     return;
 }
 
@@ -313,7 +338,9 @@ function astro(timestamp)
     window.requestAnimationFrame(astro);
     
     handleMovement();
+
     renderPlayer();
+    renderOpponent();
 
     if(pendingClick && ((timestamp - lastClickAt) < 500))
         renderMarker();
