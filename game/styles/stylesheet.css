@@ -13,7 +13,22 @@ body {
     margin-top:100px;
 }
 
-.astroContainer .astroHud {
+.astroContainer #gameContainer {
+    position:absolute;
+    top:0;
+    left:0;
+    background-repeat:no-repeat;
+    z-index:10;
+}
+
+.astroContainer #gameBackdrop {
+    filter:blur(0.9px);
+    background-image:url('../images/backdrop.png');
+    background-repeat:no-repeat;
+    z-index:-10;
+}
+
+.astroContainer .astroAbilityContainer {
     position:absolute;
     bottom:0;
     left:0;
@@ -27,7 +42,7 @@ body {
     box-sizing:border-box;
 }
 
-.astroContainer .astroHud .astroAbility {
+.astroContainer .astroAbilityContainer .astroAbility {
     cursor:pointer;
     width:80px;
     height:80px;
@@ -36,31 +51,38 @@ body {
     border-radius:4px;
 }
 
-.astroContainer .astroHud .astroAbility:last-of-type {
+.astroContainer .astroAbilityContainer .astroAbility:last-of-type {
     margin-left:12px;
 }
 
-.astroContainer .astroHud .astroAbility:hover {
+.astroContainer .astroAbilityContainer .astroAbility:hover {
     filter:brightness(110%);
 }
 
-.astroContainer .astroHud .astroAbility:active {
+.astroContainer .astroAbilityContainer .astroAbility:active {
     filter:brightness(180%);
     transform:scale(110%);
 }
 
-.astroContainer .astroHud .astroAbility:first-of-type {
+.astroContainer .astroAbilityContainer .astroAbility:first-of-type {
     background-image:url('../images/fireball.png');
     background-repeat:no-repeat;
     background-size:66px 59px;
     background-position:center;
 }
 
-.astroContainer #gameContainer {
-    background-image:url('../images/backdrop.png');
-    background-repeat:no-repeat;
-    background-color:#000;
-    z-index:10;
+.astroContainer .astroHud {
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:300px;
+    height:112px;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    flex-direction:row;
+    padding:16px;
+    box-sizing:border-box;
 }
 
 h1 {

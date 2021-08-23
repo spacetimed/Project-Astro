@@ -21,12 +21,14 @@ player.x_size = 30;
 player.y_size = 30;
 player.x = GAME_WIDTH / 4;
 player.y = GAME_HEIGHT / 2;
+player.HP = 100;
 
 var opponent = {};
 opponent.x_size = 30;
 opponent.y_size = 30;
-opponent.x = (GAME_WIDTH * 3/4) + (opponent.x_size / 2);
-opponent.y = (GAME_HEIGHT / 2) + (opponent.y_size / 2);
+opponent.x = (GAME_WIDTH * 3/4);
+opponent.y = (GAME_HEIGHT / 2);
+opponent.HP = 100;
 
 var crosshair = {};
 var marker = {};
@@ -37,6 +39,7 @@ resources.marker = imagePath + 'marker.png';
 resources.container = {};
 resources.ability0 = {};
 resources.ability1 = {};
+resources.abilityContainer = {};
 resources.hud = {};
 
 var abilities = {};
@@ -175,12 +178,13 @@ function fireAbility(a, x, y)
 
 function handleCollisionDetection(a, x, y)
 {
-    console.log(a, x, y);
-
-/*     console.log('OpponentX=>', opponent.x)
-    console.log('OpponentY=>', opponent.y)
-    console.log('OpponentX_Width=>', opponent.x_size)
-    console.log('OpponentY_Width=>', opponent.y_size) */
+    if ( (x >= opponent.x - (opponent.x_size / 2)) && 
+         (x <= opponent.x + (opponent.x_size / 2)) &&
+         (y >= opponent.y - (opponent.y_size / 2)) &&
+         (y <= opponent.y + (opponent.y_size / 2)) )
+    {
+        logger('Collision Successful');
+    }
 }
 
 var fireball = {};
@@ -252,27 +256,74 @@ function handleMovement()
 function renderPlayer()
 {
     ctx.fillStyle = 'white'; 
-    ctx.fillRect(player.x - player.x_size / 2, player.y - player.y_size / 2, player.x_size, player.y_size); 
+    ctx.fillRect(player.x - (player.x_size / 2), player.y - (player.y_size / 2), player.x_size, player.y_size); 
     return;
 }
 
 function renderOpponent()
 {
     ctx.fillStyle = 'red'; 
-    ctx.fillRect(opponent.x - opponent.x_size, opponent.y - opponent.y_size, opponent.x_size, opponent.y_size); 
+    ctx.fillRect(opponent.x - (opponent.x_size / 2), opponent.y - (opponent.y_size / 2), opponent.x_size, opponent.y_size); 
     return;
 }
 
 function renderCrosshair()
 {
     if(crosshair.constructor.name == 'HTMLImageElement')
-        ctx.drawImage(crosshair, cursorPos.x, cursorPos.y);
+        ctx.drawImage(crosshair, cursorPos.x - (crosshair.width / 2), cursorPos.y - (crosshair.height / 2));
 }
 
 function renderMarker()
 {
     if(marker.constructor.name == 'HTMLImageElement')
         ctx.drawImage(marker, cursorPos.last.x, cursorPos.last.y);
+}
+
+let particleInit = true;
+let particleT = 0;
+let particles = {};
+let particleReverse = false;
+function renderParticles()
+{
+    let bg = {};
+    bg.canvas = document.getElementById('gameBackdrop');
+    bg.ctx = bg.canvas.getContext('2d');
+    bg.canvas.width = GAME_WIDTH;
+    bg.canvas.height = GAME_HEIGHT;
+    bg.gravity = 1;
+    bg.particleCount = 100;
+    let g = 0.05;
+
+    if(particleInit)
+    {
+        for(i = 0; i < bg.particleCount; i++)
+        {
+            particles[i] = {};
+            particles[i].x = Math.floor(Math.random() * (bg.canvas.width + 1)); 
+            particles[i].y = Math.floor(Math.random() * (bg.canvas.height + 500)) - 500;
+            particles[i].v = Math.floor(Math.random() * 5) + 1; //variance
+            particles[i].s = Math.floor(Math.random() * 2) + 1;
+        }
+        particleInit = false;
+    }
+
+    //main loop
+    let particleTimeRange = 5;
+    let calcT = Math.sin(particleT) * 10;
+
+    for(i = 0; i < bg.particleCount; i++)
+    {
+        let calcT = Math.sin(particleT) * 10;
+        let calcT_xMod = Math.cos(particleT * 5) * 10;
+        particles[i].y += (1/2) * g * calcT * particles[i].v * 0.6;
+        particles[i].x += (1/2) * g * calcT_xMod * particles[i].v;
+        var circle = new Path2D();
+        circle.arc(particles[i].x, particles[i].y, particles[i].s, 0, 2 * Math.PI);
+        bg.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        bg.ctx.fill(circle);
+    }
+    
+    particleT += 0.02 * (currentFrameTime / 100);
 }
 
 function boot()
@@ -283,17 +334,20 @@ function boot()
     marker.src = resources.marker;
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
-    resources.hud = document.createElement('div');
+    resources.abilityContainer = document.createElement('div');
     resources.ability0 = document.createElement('div');
     resources.ability1 = document.createElement('div');
+    resources.hud = document.createElement('div');
     
-    resources.hud.className = 'astroHud';
+    resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
+    resources.hud.className = 'astroHud';
     
-    resources.hud.append(resources.ability0);
-    resources.hud.append(resources.ability1);
+    resources.abilityContainer.append(resources.ability0);
+    resources.abilityContainer.append(resources.ability1);
     resources.container.prepend(resources.hud);
+    resources.container.prepend(resources.abilityContainer);
 
     abilities[0].element = resources.ability0;
 
@@ -306,11 +360,11 @@ function boot()
         abilities[0].active = (abilities[0].active) ? false : true;
         if(abilities[0].active)
         {
-            resources.container.style.cursor = 'none';
+            //resources.container.style.cursor = 'none';
             abilities[0].element.style.border = '2px solid #27ff00';
             abilities[0].element.style.boxShadow = '0px 0px 3px 3px #27ff00';
         } else {
-            resources.container.style.cursor = 'default';
+            //resources.container.style.cursor = 'default';
             abilities[0].element.style.border = '2px solid rgba(255,255,255)';
             abilities[0].element.style.removeProperty('box-shadow');
         }
@@ -338,9 +392,9 @@ function astro(timestamp)
     window.requestAnimationFrame(astro);
     
     handleMovement();
-
     renderPlayer();
     renderOpponent();
+    renderParticles();
 
     if(pendingClick && ((timestamp - lastClickAt) < 500))
         renderMarker();
