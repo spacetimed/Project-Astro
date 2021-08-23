@@ -468,6 +468,48 @@ function renderFramerate()
     }
 }
 
+function rand(min, max)
+{
+    return(Math.floor(Math.random() * ((max + 1) - min) + min));
+}
+
+let lastOpponentMove = 0;
+let initialMoveAnimation = false;
+function handleOpponentMovement()
+{
+    const MIN_Y = 0;
+    const MAX_Y = GAME_HEIGHT - 100;
+    const MIN_X = GAME_WIDTH / 6;
+    const MAX_X = GAME_WIDTH;
+    const UpdateSpeed = 1000;
+    const OpponentSpeed = SPEED / 4;
+    if(GLOBAL_timestamp - lastOpponentMove >= UpdateSpeed && !initialMoveAnimation)
+    {
+        opponent.x_final = rand(MIN_X, MAX_X);
+        opponent.y_final = rand(MIN_Y, MAX_Y);
+        lastOpponentMove = GLOBAL_timestamp;
+        initialMoveAnimation = true;
+        console.log('before');
+        console.table(opponent);
+    }
+    if(initialMoveAnimation)
+    {
+        //move x
+        x_complete = (Math.abs(opponent.x - opponent.x_final) < 2) ? true : false;
+        if(!x_complete)
+            opponent.x = (opponent.x < opponent.x_final) ? (opponent.x + OpponentSpeed * currentFrameTime / 1000) : (opponent.x - OpponentSpeed * currentFrameTime / 1000);
+        else
+            opponent.x_final = rand(MIN_X, MAX_X);
+
+        //move y
+        y_complete = (Math.abs(opponent.y - opponent.y_final) < 2) ? true : false;
+        if(!y_complete)
+            opponent.y = (opponent.y < opponent.y_final) ? (opponent.y + OpponentSpeed * currentFrameTime / 1000) : (opponent.y - OpponentSpeed * currentFrameTime / 1000);
+        else
+            opponent.y_final = rand(MIN_Y, MAX_Y);
+    }
+}
+
 function astro(timestamp)
 { 
     timestamp = timestamp || 0;
@@ -483,10 +525,10 @@ function astro(timestamp)
     if(!initialized)
         boot();
     
-    
-    handleMovement();
     renderFramerate();
+    handleOpponentMovement();
     renderOpponent();
+    handleMovement();
     renderPlayer();
     renderParticles();
 
