@@ -17,35 +17,35 @@ movement.move_posX = false;
 movement.move_negX = false;
 
 var player = {};
-player.x_size = 30;
-player.y_size = 30;
+player.x_size = 60;
+player.y_size = 60;
 player.x = GAME_WIDTH / 4;
 player.y = GAME_HEIGHT / 2;
 player.HP = 100;
 
 var opponent = {};
-opponent.x_size = 30;
-opponent.y_size = 30;
+opponent.x_size = 60;
+opponent.y_size = 60;
 opponent.x = (GAME_WIDTH * 3/4);
 opponent.y = (GAME_HEIGHT / 2);
 opponent.HP = 100;
 
 var crosshair = {};
 var marker = {};
+var playerModel = {};
+var opponentModel = {};
 
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
 resources.marker = imagePath + 'marker.png';
-resources.container = {};
-resources.ability0 = {};
-resources.ability1 = {};
-resources.abilityContainer = {};
-resources.hud = {};
+resources.playerModel = imagePath + 'player_model_Sprite.png';
+resources.opponentModel = imagePath + 'enemy_model_Sprite.png';
 
 var abilities = {};
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
+abilities[0].dmg = 10;
 
 var cursorPos = {};
 var pendingClick = false;
@@ -62,9 +62,7 @@ abilityAnimationQueues.fireball.queued = false;
 abilityAnimationQueues.fireball.x = 0;
 abilityAnimationQueues.fireball.y = 0;
 
-window.addEventListener('DOMContentLoaded', (event) => {
-    astro();
-});
+window.addEventListener('DOMContentLoaded', (event) => { astro(); });
 
 function logger(message)
 {
@@ -176,6 +174,25 @@ function fireAbility(a, x, y)
     }
 }
 
+function applyDamage(player_obj, amt)
+{
+    player_obj.HP -= amt;
+    updateHudElements();
+}
+
+function updateHudElements()
+{
+    // background: linear-gradient(90deg, #FFF 100%, transparent 0%);
+    const player_str = 'HP ' + player.HP + '/100';
+    const opponent_str = 'ENEMY HP ' + opponent.HP + '/100';
+    resources.stats1HP.innerText = player_str;
+    resources.stats2HP.innerText = opponent_str;
+    //resources.stats2bar.className = 'astroStats2Bar';
+    const opponent_BarL = Math.floor(opponent.HP);
+    const opponent_BarR = Math.floor(100 - opponent.HP);
+    resources.stats2bar.style.backgroundImage = 'linear-gradient(90deg, red ' + opponent_BarL + '%, transparent 0%)';
+}
+
 function handleCollisionDetection(a, x, y)
 {
     if ( (x >= opponent.x - (opponent.x_size / 2)) && 
@@ -183,6 +200,7 @@ function handleCollisionDetection(a, x, y)
          (y >= opponent.y - (opponent.y_size / 2)) &&
          (y <= opponent.y + (opponent.y_size / 2)) )
     {
+        applyDamage(opponent, abilities[a].dmg);
         logger('Collision Successful');
     }
 }
@@ -244,7 +262,6 @@ function handleMovement()
     }
     
     if(movement.move_negX && Boolean(isValidBoundary('moveLeft')))
-    //if(movement.move_negX)
     {
         player.x -= SPEED * currentFrameTime / 1000;
     } else {
@@ -253,19 +270,54 @@ function handleMovement()
     return;
 }
 
+let playerFrame = 0;
+let playerLastTimestamp = 0;
 function renderPlayer()
 {
     ctx.fillStyle = 'white'; 
-    ctx.fillRect(player.x - (player.x_size / 2), player.y - (player.y_size / 2), player.x_size, player.y_size); 
-    return;
+    const AnimationSpeed = 100; //cycle a frame every 1000ms (1s)
+
+    if(GLOBAL_timestamp - playerLastTimestamp >= AnimationSpeed)
+    {
+        ctx.imageSmoothingEnabled = false;
+        playerLastTimestamp = GLOBAL_timestamp;
+        playerFrame = (playerFrame >= 2) ? 0 : playerFrame + 1;
+    }
+
+    const x_pos = player.x - (player.x_size / 2);
+    const y_pos = player.y - (player.y_size / 2);
+    const x_pick = playerFrame * 60;
+    ctx.drawImage(playerModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
+
 }
 
+let opponentFrame = 0;
+let opponentLastTimestamp = 0;
 function renderOpponent()
+{
+    ctx.fillStyle = 'white'; 
+    const AnimationSpeed = 100; //cycle a frame every 1000ms (1s)
+
+    if(GLOBAL_timestamp - opponentLastTimestamp >= AnimationSpeed)
+    {
+        ctx.imageSmoothingEnabled = false;
+        opponentLastTimestamp = GLOBAL_timestamp;
+        opponentFrame = (opponentFrame >= 2) ? 0 : opponentFrame + 1;
+    }
+
+    const x_pos = opponent.x - (opponent.x_size / 2);
+    const y_pos = opponent.y - (opponent.y_size / 2);
+    const x_pick = opponentFrame * 60;
+    ctx.drawImage(opponentModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
+
+}
+
+/* function renderOpponent()
 {
     ctx.fillStyle = 'red'; 
     ctx.fillRect(opponent.x - (opponent.x_size / 2), opponent.y - (opponent.y_size / 2), opponent.x_size, opponent.y_size); 
     return;
-}
+} */
 
 function renderCrosshair()
 {
@@ -282,7 +334,6 @@ function renderMarker()
 let particleInit = true;
 let particleT = 0;
 let particles = {};
-let particleReverse = false;
 function renderParticles()
 {
     let bg = {};
@@ -290,10 +341,10 @@ function renderParticles()
     bg.ctx = bg.canvas.getContext('2d');
     bg.canvas.width = GAME_WIDTH;
     bg.canvas.height = GAME_HEIGHT;
-    bg.gravity = 1;
-    bg.particleCount = 100;
+    bg.particleCount = 30;
     let g = 0.05;
 
+    //init
     if(particleInit)
     {
         for(i = 0; i < bg.particleCount; i++)
@@ -313,8 +364,8 @@ function renderParticles()
 
     for(i = 0; i < bg.particleCount; i++)
     {
-        let calcT = Math.sin(particleT) * 10;
-        let calcT_xMod = Math.cos(particleT * 5) * 10;
+        let calcT = Math.sin(particleT * particles[i].v) * 10;
+        let calcT_xMod = Math.cos(particleT * 2 * particles[i].v) * 10;
         particles[i].y += (1/2) * g * calcT * particles[i].v * 0.6;
         particles[i].x += (1/2) * g * calcT_xMod * particles[i].v;
         var circle = new Path2D();
@@ -323,29 +374,52 @@ function renderParticles()
         bg.ctx.fill(circle);
     }
     
-    particleT += 0.02 * (currentFrameTime / 100);
+    particleT += 0.02 * (currentFrameTime / 100); //time mod
 }
 
 function boot()
 {
     crosshair = new Image();
     marker = new Image();
+    playerModel = new Image();
+    opponentModel = new Image();
     crosshair.src = resources.crosshair;
     marker.src = resources.marker;
+    playerModel.src = resources.playerModel;
+    opponentModel.src = resources.opponentModel;
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
     resources.abilityContainer = document.createElement('div');
     resources.ability0 = document.createElement('div');
     resources.ability1 = document.createElement('div');
     resources.hud = document.createElement('div');
+    resources.stats1 = document.createElement('div'); 
+    resources.stats1bar = document.createElement('div'); 
+    resources.stats1HP = document.createElement('span'); 
+    resources.stats2 = document.createElement('div'); 
+    resources.stats2bar = document.createElement('div'); 
+    resources.stats2HP = document.createElement('span'); 
     
     resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
     resources.hud.className = 'astroHud';
-    
+    resources.stats1bar.className = 'astroStats1Bar';
+    resources.stats1HP.className = 'astroStats1HP';
+    resources.stats2bar.className = 'astroStats2Bar';
+    resources.stats2HP.className = 'astroStats2HP';
+    resources.stats1.className = 'astroStats1';
+    resources.stats2.className = 'astroStats2';
+    resources.stats1HP.innerText = 'HP 100/100';
+    resources.stats2HP.innerText = 'ENEMY HP 100/100';
     resources.abilityContainer.append(resources.ability0);
     resources.abilityContainer.append(resources.ability1);
+    resources.stats2.append(resources.stats2HP);
+    resources.stats2.append(resources.stats2bar);
+    resources.hud.prepend(resources.stats2);
+    resources.stats1.append(resources.stats1HP);
+    resources.stats1.append(resources.stats1bar);
+    resources.hud.prepend(resources.stats1);
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
 
