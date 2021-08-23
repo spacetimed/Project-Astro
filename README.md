@@ -1,4 +1,2 @@
 # Project-Astro
-
-Work in progress
-
+Under Development

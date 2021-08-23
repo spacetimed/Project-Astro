@@ -37,7 +37,7 @@ var opponentModel = {};
 
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
-resources.marker = imagePath + 'marker.png';
+resources.marker = imagePath + 'hitmarker.png';
 resources.playerModel = imagePath + 'player_model_Sprite.png';
 resources.opponentModel = imagePath + 'enemy_model_Sprite.png';
 
@@ -45,7 +45,7 @@ var abilities = {};
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
-abilities[0].dmg = 10;
+abilities[0].dmg = 5;
 
 var cursorPos = {};
 var pendingClick = false;
@@ -62,7 +62,10 @@ abilityAnimationQueues.fireball.queued = false;
 abilityAnimationQueues.fireball.x = 0;
 abilityAnimationQueues.fireball.y = 0;
 
-window.addEventListener('DOMContentLoaded', (event) => { astro(); });
+window.onload = function() {
+    document.getElementsByClassName('astroSplashscreen')[0].style.display = 'none';
+    astro(); 
+}
 
 function logger(message)
 {
@@ -272,6 +275,7 @@ function handleMovement()
 
 let playerFrame = 0;
 let playerLastTimestamp = 0;
+let deg = 0;
 function renderPlayer()
 {
     ctx.fillStyle = 'white'; 
@@ -287,8 +291,10 @@ function renderPlayer()
     const x_pos = player.x - (player.x_size / 2);
     const y_pos = player.y - (player.y_size / 2);
     const x_pick = playerFrame * 60;
-    ctx.drawImage(playerModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
 
+    ctx.save();
+    ctx.drawImage(playerModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
+    ctx.restore();
 }
 
 let opponentFrame = 0;
@@ -328,7 +334,7 @@ function renderCrosshair()
 function renderMarker()
 {
     if(marker.constructor.name == 'HTMLImageElement')
-        ctx.drawImage(marker, cursorPos.last.x, cursorPos.last.y);
+        ctx.drawImage(marker, cursorPos.last.x - (marker.width / 2), cursorPos.last.y - (marker.width / 2));
 }
 
 let particleInit = true;
@@ -344,7 +350,6 @@ function renderParticles()
     bg.particleCount = 30;
     let g = 0.05;
 
-    //init
     if(particleInit)
     {
         for(i = 0; i < bg.particleCount; i++)
@@ -358,7 +363,6 @@ function renderParticles()
         particleInit = false;
     }
 
-    //main loop
     let particleTimeRange = 5;
     let calcT = Math.sin(particleT) * 10;
 
@@ -422,7 +426,6 @@ function boot()
     resources.hud.prepend(resources.stats1);
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
-
     abilities[0].element = resources.ability0;
 
     document.addEventListener('keydown', keyDownHandler, false);
@@ -448,6 +451,23 @@ function boot()
     welcomeToAstro();
 }
 
+function getCurrentFramerate()
+{
+    return((1 / currentFrameTime * 1000).toFixed(1));
+}
+
+let lastFramerateRender = 0;
+function renderFramerate()
+{
+    const UpdateSpeed = 250;
+    if(GLOBAL_timestamp - lastFramerateRender >= UpdateSpeed)
+    {
+        resources.framerate = document.getElementsByClassName('astroContainer_stats')[0];
+        resources.framerate.innerText = 'FPS ' + getCurrentFramerate();
+        lastFramerateRender = GLOBAL_timestamp;
+    }
+}
+
 function astro(timestamp)
 { 
     timestamp = timestamp || 0;
@@ -463,11 +483,11 @@ function astro(timestamp)
     if(!initialized)
         boot();
     
-    window.requestAnimationFrame(astro);
     
     handleMovement();
-    renderPlayer();
+    renderFramerate();
     renderOpponent();
+    renderPlayer();
     renderParticles();
 
     if(pendingClick && ((timestamp - lastClickAt) < 500))
@@ -481,4 +501,6 @@ function astro(timestamp)
 
     if(abilityAnimationQueues.fireball.queued)
         showFireballAnimation();
+
+    window.requestAnimationFrame(astro);
 }
