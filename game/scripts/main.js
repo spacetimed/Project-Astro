@@ -7,7 +7,7 @@ var lastFrameTimestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 400; //Pixels per Second (px/s)
+const SPEED = 400; //player speed (pixels per second)
 const imagePath = 'images/';
 
 var movement = {};
@@ -34,18 +34,30 @@ var crosshair = {};
 var marker = {};
 var playerModel = {};
 var opponentModel = {};
+var beamModel = {};
+var beamModelY = {};
 
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
 resources.marker = imagePath + 'hitmarker.png';
 resources.playerModel = imagePath + 'player_model_Sprite.png';
 resources.opponentModel = imagePath + 'enemy_model_Sprite.png';
+resources.beamModel = imagePath + 'beam_animation.png';
+resources.beamModelY = imagePath + 'beam_animation_y.png';
 
 var abilities = {};
+
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
 abilities[0].dmg = 5;
+
+abilities[1] = {};
+abilities[1].name = 'beam';
+abilities[1].active = false;
+abilities[1].dmg = 2; 
+abilities[1].dmgRate = 1.0; //2 dmg per 1.0s
+abilities[1].firing = false;
 
 var cursorPos = {};
 var pendingClick = false;
@@ -152,17 +164,15 @@ function mouseMoveHandler(e)
 
 function mouseClickHandler(e)
 {
-    for(a in abilities)
+    let a = 0;
+    if(abilities[a].active)
     {
-        if(abilities[a].active)
-        {
-            pendingClick = true;
-            lastClickAt = GLOBAL_timestamp;
-            cursorPos.last.x = e.offsetX;
-            cursorPos.last.y = e.offsetY;
-            fireAbility(a, e.offsetX, e.offsetY);
-            return;
-        }
+        pendingClick = true;
+        lastClickAt = GLOBAL_timestamp;
+        cursorPos.last.x = e.offsetX;
+        cursorPos.last.y = e.offsetY;
+        fireAbility(a, e.offsetX, e.offsetY);
+        return;
     }
 }
 
@@ -177,6 +187,25 @@ function fireAbility(a, x, y)
     }
 }
 
+function mouseDownHandler(e)
+{
+    let a = 1;
+    if(abilities[a].active)
+    {
+        abilities[a].firing = true;
+    }
+}
+
+function mouseUpHandler(e)
+{
+    let a = 1;
+    if(abilities[a].active && abilities[a].firing)
+    {
+        abilities[a].firing = false;
+    }
+}
+
+
 function applyDamage(player_obj, amt)
 {
     player_obj.HP -= amt;
@@ -185,12 +214,10 @@ function applyDamage(player_obj, amt)
 
 function updateHudElements()
 {
-    // background: linear-gradient(90deg, #FFF 100%, transparent 0%);
     const player_str = 'HP ' + player.HP + '/100';
     const opponent_str = 'ENEMY HP ' + opponent.HP + '/100';
     resources.stats1HP.innerText = player_str;
     resources.stats2HP.innerText = opponent_str;
-    //resources.stats2bar.className = 'astroStats2Bar';
     const opponent_BarL = Math.floor(opponent.HP);
     const opponent_BarR = Math.floor(100 - opponent.HP);
     resources.stats2bar.style.backgroundImage = 'linear-gradient(90deg, red ' + opponent_BarL + '%, transparent 0%)';
@@ -204,7 +231,6 @@ function handleCollisionDetection(a, x, y)
          (y <= opponent.y + (opponent.y_size / 2)) )
     {
         applyDamage(opponent, abilities[a].dmg);
-        logger('Collision Successful');
     }
 }
 
@@ -318,13 +344,6 @@ function renderOpponent()
 
 }
 
-/* function renderOpponent()
-{
-    ctx.fillStyle = 'red'; 
-    ctx.fillRect(opponent.x - (opponent.x_size / 2), opponent.y - (opponent.y_size / 2), opponent.x_size, opponent.y_size); 
-    return;
-} */
-
 function renderCrosshair()
 {
     if(crosshair.constructor.name == 'HTMLImageElement')
@@ -387,10 +406,15 @@ function boot()
     marker = new Image();
     playerModel = new Image();
     opponentModel = new Image();
+    beamModel = new Image();
+    beamModelY = new Image();
+
     crosshair.src = resources.crosshair;
     marker.src = resources.marker;
     playerModel.src = resources.playerModel;
     opponentModel.src = resources.opponentModel;
+    beamModel.src = resources.beamModel;
+    beamModelY.src = resources.beamModelY;
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
     resources.abilityContainer = document.createElement('div');
@@ -403,7 +427,6 @@ function boot()
     resources.stats2 = document.createElement('div'); 
     resources.stats2bar = document.createElement('div'); 
     resources.stats2HP = document.createElement('span'); 
-    
     resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
@@ -427,28 +450,59 @@ function boot()
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
     abilities[0].element = resources.ability0;
+    abilities[1].element = resources.ability1;
 
     document.addEventListener('keydown', keyDownHandler, false);
     document.addEventListener('keyup', keyUpHandler, false);
     canvas.addEventListener('mousemove', mouseMoveHandler, false);
     canvas.addEventListener('click', mouseClickHandler, false);
+    canvas.addEventListener('mousedown', mouseDownHandler, false);
+    canvas.addEventListener('mouseup', mouseUpHandler, false);
 
-    resources.ability0.addEventListener('click', (event) => {
-        abilities[0].active = (abilities[0].active) ? false : true;
-        if(abilities[0].active)
-        {
-            //resources.container.style.cursor = 'none';
-            abilities[0].element.style.border = '2px solid #27ff00';
-            abilities[0].element.style.boxShadow = '0px 0px 3px 3px #27ff00';
-        } else {
-            //resources.container.style.cursor = 'default';
-            abilities[0].element.style.border = '2px solid rgba(255,255,255)';
-            abilities[0].element.style.removeProperty('box-shadow');
-        }
+    resources.ability0.addEventListener('click', () => {
+        handleAbilityClick(0);
+    });
+    
+    resources.ability1.addEventListener('click', () => {
+        handleAbilityClick(1);
     });
     
     initialized = true;
     welcomeToAstro();
+}
+
+function handleAbilityClick(n) 
+{
+    const n_2 = n ? 0 : 1; //other ability
+    
+    if(abilities[n_2].active)
+    {
+        abilities[n_2].active = false;
+        makeAbilityInactive(n_2);
+    }
+    
+    abilities[n].active = (abilities[n].active) ? false : true;
+
+    if(abilities[n].active)
+    {
+        makeAbilityActive(n);
+    } else {
+        makeAbilityInactive(n);
+    }
+}
+
+function makeAbilityInactive(n)
+{
+    resources.container.style.cursor = 'default';
+    abilities[n].element.style.border = '2px solid rgba(255,255,255)';
+    abilities[n].element.style.removeProperty('box-shadow');
+}
+
+function makeAbilityActive(n)
+{
+    resources.container.style.cursor = 'none';
+    abilities[n].element.style.border = '2px solid #27ff00';
+    abilities[n].element.style.boxShadow = '0px 0px 3px 3px #27ff00';
 }
 
 function getCurrentFramerate()
@@ -459,7 +513,7 @@ function getCurrentFramerate()
 let lastFramerateRender = 0;
 function renderFramerate()
 {
-    const UpdateSpeed = 250;
+    const UpdateSpeed = 1000;
     if(GLOBAL_timestamp - lastFramerateRender >= UpdateSpeed)
     {
         resources.framerate = document.getElementsByClassName('astroContainer_stats')[0];
@@ -489,19 +543,14 @@ function handleOpponentMovement()
         opponent.y_final = rand(MIN_Y, MAX_Y);
         lastOpponentMove = GLOBAL_timestamp;
         initialMoveAnimation = true;
-        console.log('before');
-        console.table(opponent);
     }
     if(initialMoveAnimation)
     {
-        //move x
         x_complete = (Math.abs(opponent.x - opponent.x_final) < 2) ? true : false;
         if(!x_complete)
             opponent.x = (opponent.x < opponent.x_final) ? (opponent.x + OpponentSpeed * currentFrameTime / 1000) : (opponent.x - OpponentSpeed * currentFrameTime / 1000);
         else
             opponent.x_final = rand(MIN_X, MAX_X);
-
-        //move y
         y_complete = (Math.abs(opponent.y - opponent.y_final) < 2) ? true : false;
         if(!y_complete)
             opponent.y = (opponent.y < opponent.y_final) ? (opponent.y + OpponentSpeed * currentFrameTime / 1000) : (opponent.y - OpponentSpeed * currentFrameTime / 1000);
@@ -526,10 +575,6 @@ function astro(timestamp)
         boot();
     
     renderFramerate();
-    handleOpponentMovement();
-    renderOpponent();
-    handleMovement();
-    renderPlayer();
     renderParticles();
 
     if(pendingClick && ((timestamp - lastClickAt) < 500))
@@ -544,5 +589,126 @@ function astro(timestamp)
     if(abilityAnimationQueues.fireball.queued)
         showFireballAnimation();
 
+    if(abilities[1].firing)
+        showBeamAnimation();
+
+    handleOpponentMovement();
+    renderOpponent();
+    handleMovement();
+    renderPlayer();
+
     window.requestAnimationFrame(astro);
+}
+
+
+function dummyFunction() //for reference purposes
+{
+    ctx.fillStyle = 'white'; 
+    const AnimationSpeed = 100; //cycle a frame every 1000ms (1s)
+
+    if(GLOBAL_timestamp - playerLastTimestamp >= AnimationSpeed)
+    {
+        ctx.imageSmoothingEnabled = false;
+        playerLastTimestamp = GLOBAL_timestamp;
+        playerFrame = (playerFrame >= 2) ? 0 : playerFrame + 1;
+    }
+
+    const x_pos = player.x - (player.x_size / 2);
+    const y_pos = player.y - (player.y_size / 2);
+    const x_pick = playerFrame * 60;
+
+    ctx.save();
+    ctx.drawImage(playerModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
+    ctx.restore();
+}
+
+function rand(min, max) { //function from MDN
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
+
+var beamFrame = 0;
+var beamReverseFrame = false;
+function showBeamAnimation()
+{
+
+    ctx.fillStyle = '#ff0000'; 
+    
+    const x_0 = player.x; //0
+    const y_0 = player.y;
+    const x_1 = cursorPos.x; //1000
+    const y_1 = cursorPos.y;
+
+    var beamSize_x = 4;
+    var beamSize_y = 20;
+    var vertical = false;
+
+    const increment_1 = (Math.abs(x_1 - x_0) / beamSize_x);
+    const increment_2 = (Math.abs(y_1 - y_0) / beamSize_y);
+    const increment = (increment_1 > increment_2) ? increment_1 : increment_2;
+    const distance = Math.sqrt( (x_1 - x_0)**2 + (y_1 - y_0)**2 );
+    const slope = (y_1 - y_0) / (x_0 - x_1);
+    
+    if(Math.abs(x_1 - x_0) > Math.abs(y_1 - y_0)) 
+    {
+        vertical = false;
+        activeBeamModel = beamModel;
+    } else {
+        vertical = true;
+        activeBeamModel = beamModelY;
+        [beamSize_x, beamSize_y] = [beamSize_y, beamSize_x];
+    }
+
+    if(!vertical)
+    {
+        for(i = 0; i <= increment; i++)
+        {
+            if(i == 0)
+                beamFrame = rand(0, 3);
+    
+            if(beamFrame >= 3) {
+                beamReverseFrame = true;
+                beamFrame -= 2;
+            }
+            else if(beamFrame < 0) {
+                beamReverseFrame = false;
+                beamFrame += 2;
+            }
+    
+            const x_c = x_0 + (x_1 - x_0) * (i / increment);
+            const y_c = y_0 + (y_1 - y_0) * (i / increment);
+            ctx.drawImage(activeBeamModel, (beamFrame * beamSize_x), 0, beamSize_x, beamSize_y, x_c, y_c, beamSize_x, beamSize_y);
+    
+            if(!beamReverseFrame)
+                beamFrame += 1;
+            else
+                beamFrame -= 1;
+        }
+    } else {
+        for(i = 0; i <= increment * 5; i++)
+        {
+            if(i == 0)
+                beamFrame = rand(0, 3);
+    
+            if(beamFrame >= 3) {
+                beamReverseFrame = true;
+                beamFrame -= 2;
+            }
+            else if(beamFrame < 0) {
+                beamReverseFrame = false;
+                beamFrame += 2;
+            }
+    
+            const x_c = x_0 + (x_1 - x_0) * (i / increment / 5);
+            const y_c = y_0 + (y_1 - y_0) * (i / (increment * 5));
+            ctx.drawImage(activeBeamModel, 0, (beamFrame * beamSize_y), beamSize_x, beamSize_y, x_c, y_c, beamSize_x, beamSize_y);
+    
+            if(!beamReverseFrame)
+                beamFrame += 1;
+            else
+                beamFrame -= 1;
+        }
+    }
 }
