@@ -12,6 +12,7 @@ body {
     margin:0 auto;
     position:relative;
     margin-top:100px;
+    user-select:none;
 }
 
 .astroContainer .astroSplashscreen {

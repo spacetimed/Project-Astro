@@ -7,7 +7,7 @@ var lastFrameTimestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 400; //player speed (pixels per second)
+const SPEED = 350; //player speed (pixels per second)
 const imagePath = 'images/';
 
 var movement = {};
@@ -36,6 +36,7 @@ var playerModel = {};
 var opponentModel = {};
 var beamModel = {};
 var beamModelY = {};
+var fireballModel = {};
 
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
@@ -44,6 +45,7 @@ resources.playerModel = imagePath + 'player_model_Sprite.png';
 resources.opponentModel = imagePath + 'enemy_model_Sprite.png';
 resources.beamModel = imagePath + 'beam_animation.png';
 resources.beamModelY = imagePath + 'beam_animation_y.png';
+resources.fireballModel = imagePath + 'fireball_animation.png';
 
 var abilities = {};
 
@@ -56,7 +58,7 @@ abilities[1] = {};
 abilities[1].name = 'beam';
 abilities[1].active = false;
 abilities[1].dmg = 2; 
-abilities[1].dmgRate = 1.0; //2 dmg per 1.0s
+abilities[1].dmgRate = 0.4; //2 dmg per 1.0s
 abilities[1].firing = false;
 
 var cursorPos = {};
@@ -176,6 +178,7 @@ function mouseClickHandler(e)
     }
 }
 
+lastDamageProc = 0;
 function fireAbility(a, x, y)
 {
     if(a == 0)
@@ -184,6 +187,15 @@ function fireAbility(a, x, y)
         abilityAnimationQueues.fireball.x = x;
         abilityAnimationQueues.fireball.y = y;
         handleCollisionDetection(a, x, y);
+    } else if(a == 1)
+    {
+        if(GLOBAL_timestamp - lastDamageProc >= (abilities[a].dmgRate * 1000))
+        {
+            cursorPos.last.x =  x;
+            cursorPos.last.y =  y;
+            handleCollisionDetection(a, x, y);
+            lastDamageProc = GLOBAL_timestamp;
+        }
     }
 }
 
@@ -237,9 +249,10 @@ function handleCollisionDetection(a, x, y)
 var fireball = {};
 var t = false;
 var fireballAnimationComplete = false;
+var fireballFrame = 0;
 function showFireballAnimation()
 {
-    const AnimationSpeed = 10;
+    const AnimationSpeed = 8;
     let newAnim = (abilityAnimationQueues.fireball.x != fireball.x_end) ? true : false;
     fireball.x_0 = player.x;
     fireball.y_0 = player.y;
@@ -264,7 +277,13 @@ function showFireballAnimation()
     fireball.x_equation = fireball.x_center + fireball.radius * Math.cos(t);
     fireball.y_equation = fireball.y_center + fireball.radius * Math.sin(t);
     ctx.fillStyle = 'yellow'; 
-    ctx.fillRect(fireball.x_equation, fireball.y_equation, 10, 10); 
+    //ctx.fillRect(fireball.x_equation, fireball.y_equation, 10, 10); 
+
+    fireballSize_x = 30;
+    fireballSize_y = 30;
+    fireballFrame = (fireballFrame >= 2) ? 0 : fireballFrame + 1;
+    fireballFramePos = fireballFrame * fireballSize_x;
+    ctx.drawImage(fireballModel, fireballFramePos, 0, fireballSize_x, fireballSize_y, fireball.x_equation - (fireballSize_x / 2), fireball.y_equation - (fireballSize_y / 2), fireballSize_x, fireballSize_y);
 }
 
 function handleMovement()
@@ -408,6 +427,7 @@ function boot()
     opponentModel = new Image();
     beamModel = new Image();
     beamModelY = new Image();
+    fireballModel = new Image();
 
     crosshair.src = resources.crosshair;
     marker.src = resources.marker;
@@ -415,6 +435,7 @@ function boot()
     opponentModel.src = resources.opponentModel;
     beamModel.src = resources.beamModel;
     beamModelY.src = resources.beamModelY;
+    fireballModel.src = resources.fireballModel;
     
     resources.container = document.getElementsByClassName('astroContainer')[0];
     resources.abilityContainer = document.createElement('div');
@@ -559,69 +580,6 @@ function handleOpponentMovement()
     }
 }
 
-function astro(timestamp)
-{ 
-    timestamp = timestamp || 0;
-    GLOBAL_timestamp = timestamp;
-    currentFrameTime = (timestamp - lastFrameTimestamp); 
-    lastFrameTimestamp = timestamp;
-
-    canvas = document.getElementById('gameContainer');
-    ctx = canvas.getContext('2d');
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
-    if(!initialized)
-        boot();
-    
-    renderFramerate();
-    renderParticles();
-
-    if(pendingClick && ((timestamp - lastClickAt) < 500))
-        renderMarker();
-
-    for(a in abilities)
-    {
-        if(abilities[a].active)
-            renderCrosshair();
-    }
-
-    if(abilityAnimationQueues.fireball.queued)
-        showFireballAnimation();
-
-    if(abilities[1].firing)
-        showBeamAnimation();
-
-    handleOpponentMovement();
-    renderOpponent();
-    handleMovement();
-    renderPlayer();
-
-    window.requestAnimationFrame(astro);
-}
-
-
-function dummyFunction() //for reference purposes
-{
-    ctx.fillStyle = 'white'; 
-    const AnimationSpeed = 100; //cycle a frame every 1000ms (1s)
-
-    if(GLOBAL_timestamp - playerLastTimestamp >= AnimationSpeed)
-    {
-        ctx.imageSmoothingEnabled = false;
-        playerLastTimestamp = GLOBAL_timestamp;
-        playerFrame = (playerFrame >= 2) ? 0 : playerFrame + 1;
-    }
-
-    const x_pos = player.x - (player.x_size / 2);
-    const y_pos = player.y - (player.y_size / 2);
-    const x_pick = playerFrame * 60;
-
-    ctx.save();
-    ctx.drawImage(playerModel, x_pick, 0, 60, 60, x_pos, y_pos, 60, 60);
-    ctx.restore();
-}
-
 function rand(min, max) { //function from MDN
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -679,7 +637,7 @@ function showBeamAnimation()
     
             const x_c = x_0 + (x_1 - x_0) * (i / increment);
             const y_c = y_0 + (y_1 - y_0) * (i / increment);
-            ctx.drawImage(activeBeamModel, (beamFrame * beamSize_x), 0, beamSize_x, beamSize_y, x_c, y_c, beamSize_x, beamSize_y);
+            ctx.drawImage(activeBeamModel, (beamFrame * beamSize_x), 0, beamSize_x, beamSize_y, x_c - (beamSize_x / 2), y_c - (beamSize_y / 2), beamSize_x, beamSize_y);
     
             if(!beamReverseFrame)
                 beamFrame += 1;
@@ -703,7 +661,7 @@ function showBeamAnimation()
     
             const x_c = x_0 + (x_1 - x_0) * (i / increment / 5);
             const y_c = y_0 + (y_1 - y_0) * (i / (increment * 5));
-            ctx.drawImage(activeBeamModel, 0, (beamFrame * beamSize_y), beamSize_x, beamSize_y, x_c, y_c, beamSize_x, beamSize_y);
+            ctx.drawImage(activeBeamModel, 0, (beamFrame * beamSize_y), beamSize_x, beamSize_y, x_c - (beamSize_x / 2), y_c - (beamSize_y / 2), beamSize_x, beamSize_y);
     
             if(!beamReverseFrame)
                 beamFrame += 1;
@@ -711,4 +669,49 @@ function showBeamAnimation()
                 beamFrame -= 1;
         }
     }
+}
+
+function astro(timestamp)
+{ 
+    timestamp = timestamp || 0;
+    GLOBAL_timestamp = timestamp;
+    currentFrameTime = (timestamp - lastFrameTimestamp); 
+    lastFrameTimestamp = timestamp;
+
+    canvas = document.getElementById('gameContainer');
+    ctx = canvas.getContext('2d');
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
+
+    if(!initialized)
+        boot();
+    
+    renderFramerate();
+    renderParticles();
+
+    if(abilityAnimationQueues.fireball.queued)
+        showFireballAnimation();
+
+
+    if(abilities[1].firing)
+    {
+        showBeamAnimation();
+        fireAbility(a, cursorPos.x, cursorPos.y);
+    }
+
+    handleOpponentMovement();
+    renderOpponent();
+    handleMovement();
+    renderPlayer();
+
+    if(pendingClick && ((timestamp - lastClickAt) < 500))
+        renderMarker();
+
+    for(a in abilities)
+    {
+        if(abilities[a].active)
+            renderCrosshair();
+    }
+
+    window.requestAnimationFrame(astro);
 }
