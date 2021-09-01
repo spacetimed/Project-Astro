@@ -113,6 +113,7 @@ body {
     text-align:left;
     justify-content:space-between;
     user-select:none;
+    pointer-events: none;
 }
 
 .astroContainer .astroHud .astroStats1, .astroContainer .astroHud .astroStats2 {
@@ -166,4 +167,30 @@ h1 {
     font-weight:700;
     padding-right:10px;
     box-sizing: border-box;
+}
+
+.astroContainer .astroInfoBar {
+    color:red;
+    position:absolute;
+    top:0;
+    left:0;
+    z-index:15;
+    text-align:left;
+    font-weight:700;
+    color:#fff;
+    padding:10px;
+    width:200px;
+    box-sizing:border-box;
+    text-align:center;
+    width:100%;
+    pointer-events: none;
+}
+
+.astroContainer .astroInfoBar .astroInfoBarLevel {
+    margin-right:10px;
+}
+
+.astroContainer .astroInfoBar .astroInfoBarTime {
+    margin-right:10px;
+    font-weight:400;
 }

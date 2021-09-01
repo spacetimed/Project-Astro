@@ -1,3 +1,8 @@
+/*
+    https://github.com/FFFFFF-base16/Project-Astro
+*/
+
+
 var initialized = false; 
 var canvas;
 var ctx;
@@ -7,7 +12,7 @@ var lastFrameTimestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 350; //player speed (pixels per second)
+const SPEED = 400; //player speed (pixels per second)
 const imagePath = 'images/';
 
 var movement = {};
@@ -57,13 +62,14 @@ abilities[0].dmg = 5;
 abilities[1] = {};
 abilities[1].name = 'beam';
 abilities[1].active = false;
-abilities[1].dmg = 2; 
-abilities[1].dmgRate = 0.4; //2 dmg per 1.0s
+abilities[1].dmg = 4; 
+abilities[1].dmgRate = 0.5; //2 dmg per 1.0s
 abilities[1].firing = false;
 
-var cursorPos = {};
 var pendingClick = false;
 var lastClickAt = 0;
+
+var cursorPos = {};
 cursorPos.x = 0;
 cursorPos.y = 0;
 cursorPos.last = {};
@@ -252,7 +258,7 @@ var fireballAnimationComplete = false;
 var fireballFrame = 0;
 function showFireballAnimation()
 {
-    const AnimationSpeed = 8;
+    const AnimationSpeed = 25;
     let newAnim = (abilityAnimationQueues.fireball.x != fireball.x_end) ? true : false;
     fireball.x_0 = player.x;
     fireball.y_0 = player.y;
@@ -277,8 +283,6 @@ function showFireballAnimation()
     fireball.x_equation = fireball.x_center + fireball.radius * Math.cos(t);
     fireball.y_equation = fireball.y_center + fireball.radius * Math.sin(t);
     ctx.fillStyle = 'yellow'; 
-    //ctx.fillRect(fireball.x_equation, fireball.y_equation, 10, 10); 
-
     fireballSize_x = 30;
     fireballSize_y = 30;
     fireballFrame = (fireballFrame >= 2) ? 0 : fireballFrame + 1;
@@ -378,7 +382,7 @@ function renderMarker()
 let particleInit = true;
 let particleT = 0;
 let particles = {};
-function renderParticles()
+function renderParticles() //https://github.com/FFFFFF-base16/Floatr
 {
     let bg = {};
     bg.canvas = document.getElementById('gameBackdrop');
@@ -387,7 +391,6 @@ function renderParticles()
     bg.canvas.height = GAME_HEIGHT;
     bg.particleCount = 30;
     let g = 0.05;
-
     if(particleInit)
     {
         for(i = 0; i < bg.particleCount; i++)
@@ -400,10 +403,8 @@ function renderParticles()
         }
         particleInit = false;
     }
-
     let particleTimeRange = 5;
     let calcT = Math.sin(particleT) * 10;
-
     for(i = 0; i < bg.particleCount; i++)
     {
         let calcT = Math.sin(particleT * particles[i].v) * 10;
@@ -415,7 +416,6 @@ function renderParticles()
         bg.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         bg.ctx.fill(circle);
     }
-    
     particleT += 0.02 * (currentFrameTime / 100); //time mod
 }
 
@@ -448,6 +448,9 @@ function boot()
     resources.stats2 = document.createElement('div'); 
     resources.stats2bar = document.createElement('div'); 
     resources.stats2HP = document.createElement('span'); 
+    resources.infoBar = document.createElement('div');
+    resources.infoBarTime = document.createElement('span');
+    resources.infoBarLevel = document.createElement('span');
     resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
@@ -458,8 +461,13 @@ function boot()
     resources.stats2HP.className = 'astroStats2HP';
     resources.stats1.className = 'astroStats1';
     resources.stats2.className = 'astroStats2';
+    resources.infoBar.className = 'astroInfoBar';
+    resources.infoBarTime.className = 'astroInfoBarTime';
+    resources.infoBarLevel.className = 'astroInfoBarLevel';
     resources.stats1HP.innerText = 'HP 100/100';
     resources.stats2HP.innerText = 'ENEMY HP 100/100';
+    resources.infoBarTime.innerText = '00:00:00';
+    resources.infoBarLevel.innerText = 'LEVEL 1 -';
     resources.abilityContainer.append(resources.ability0);
     resources.abilityContainer.append(resources.ability1);
     resources.stats2.append(resources.stats2HP);
@@ -468,8 +476,12 @@ function boot()
     resources.stats1.append(resources.stats1HP);
     resources.stats1.append(resources.stats1bar);
     resources.hud.prepend(resources.stats1);
+    resources.infoBar.append(resources.infoBarLevel);
+    resources.infoBar.append(resources.infoBarTime);
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
+    resources.container.prepend(resources.infoBar);
+
     abilities[0].element = resources.ability0;
     abilities[1].element = resources.ability1;
 
@@ -543,13 +555,37 @@ function renderFramerate()
     }
 }
 
+function formatTimer(n_int)
+{
+    const n = n_int.toString();
+    if(n.length < 2)
+        return '0' + n;
+    return n;
+}
+
+let lastTimerRender = 0;
+function renderGameTimer() 
+{
+    const UpdateSpeed = 50;
+    if(GLOBAL_timestamp - lastTimerRender >= UpdateSpeed)
+    {
+        var s = (Math.floor(GLOBAL_timestamp / 1000));
+        const m = formatTimer(Math.floor(s / 60));
+        const ms = formatTimer(Math.floor((GLOBAL_timestamp / 1000 - s) * 100));
+        s = formatTimer(s % 60);
+        resources.infoBarTime.innerText = (m + ':' + s + ':' + ms);
+        lastTimerRender = GLOBAL_timestamp;
+    }
+}
+
 function rand(min, max)
 {
     return(Math.floor(Math.random() * ((max + 1) - min) + min));
 }
 
 let lastOpponentMove = 0;
-let initialMoveAnimation = false;
+let activeMovementAnimation = false;
+let opponentMovementQueue = {'x' : 0, 'y' : 0};
 function handleOpponentMovement()
 {
     const MIN_Y = 0;
@@ -558,42 +594,48 @@ function handleOpponentMovement()
     const MAX_X = GAME_WIDTH;
     const UpdateSpeed = 1000;
     const OpponentSpeed = SPEED / 4;
-    if(GLOBAL_timestamp - lastOpponentMove >= UpdateSpeed && !initialMoveAnimation)
+
+    if(GLOBAL_timestamp - lastOpponentMove >= UpdateSpeed && !activeMovementAnimation)
     {
-        opponent.x_final = rand(MIN_X, MAX_X);
-        opponent.y_final = rand(MIN_Y, MAX_Y);
-        lastOpponentMove = GLOBAL_timestamp;
-        initialMoveAnimation = true;
+        let direction = rand(0, 3);
+        opponentMovementQueue['x'] = (direction == 0 || direction == 2) ? rand(MIN_X, MAX_X) : opponentMovementQueue['x'];
+        opponentMovementQueue['y'] = (direction == 1 || direction == 2) ? rand(MIN_Y, MAX_Y) : opponentMovementQueue['y'];
+        activeMovementAnimation = true;
     }
-    if(initialMoveAnimation)
+    if(activeMovementAnimation)
     {
-        x_complete = (Math.abs(opponent.x - opponent.x_final) < 2) ? true : false;
-        if(!x_complete)
-            opponent.x = (opponent.x < opponent.x_final) ? (opponent.x + OpponentSpeed * currentFrameTime / 1000) : (opponent.x - OpponentSpeed * currentFrameTime / 1000);
-        else
-            opponent.x_final = rand(MIN_X, MAX_X);
-        y_complete = (Math.abs(opponent.y - opponent.y_final) < 2) ? true : false;
-        if(!y_complete)
-            opponent.y = (opponent.y < opponent.y_final) ? (opponent.y + OpponentSpeed * currentFrameTime / 1000) : (opponent.y - OpponentSpeed * currentFrameTime / 1000);
-        else
-            opponent.y_final = rand(MIN_Y, MAX_Y);
+        if(opponentMovementQueue['x'] > 0)
+        {
+            if(Math.abs(opponentMovementQueue['x'] - opponent.x) > 2)
+            {
+                if(opponentMovementQueue['x'] > opponent.x)
+                    opponent.x += OpponentSpeed * currentFrameTime / 1000;
+                else
+                    opponent.x -= OpponentSpeed * currentFrameTime / 1000;
+            } else {
+                opponentMovementQueue['x'] = 0;
+            }
+        }
+        if(opponentMovementQueue['y'] > 0)
+        {
+            if(Math.abs(opponentMovementQueue['y'] - opponent.y) > 2)
+            {
+                if(opponentMovementQueue['y'] > opponent.y)
+                    opponent.y += OpponentSpeed * currentFrameTime / 1000;
+                else
+                    opponent.y -= OpponentSpeed * currentFrameTime / 1000;
+            } else {
+                opponentMovementQueue['y'] = 0;
+            }
+        }
+        activeMovementAnimation = !(opponentMovementQueue['x'] == 0 && opponentMovementQueue['y'] == 0);
     }
 }
-
-function rand(min, max) { //function from MDN
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min);
-}
-
 
 var beamFrame = 0;
 var beamReverseFrame = false;
 function showBeamAnimation()
 {
-
-    ctx.fillStyle = '#ff0000'; 
-    
     const x_0 = player.x; //0
     const y_0 = player.y;
     const x_1 = cursorPos.x; //1000
@@ -618,7 +660,9 @@ function showBeamAnimation()
         activeBeamModel = beamModelY;
         [beamSize_x, beamSize_y] = [beamSize_y, beamSize_x];
     }
-
+    
+    ctx.fillStyle = '#ff0000'; 
+    
     if(!vertical)
     {
         for(i = 0; i <= increment; i++)
@@ -671,6 +715,12 @@ function showBeamAnimation()
     }
 }
 
+function rand(min, max) { //function from MDN
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
 function astro(timestamp)
 { 
     timestamp = timestamp || 0;
@@ -687,6 +737,7 @@ function astro(timestamp)
         boot();
     
     renderFramerate();
+    renderGameTimer();
     renderParticles();
 
     if(abilityAnimationQueues.fireball.queued)
