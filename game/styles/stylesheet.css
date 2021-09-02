@@ -210,6 +210,7 @@ h1 {
     color:#fff;
     animation:blink 0.5s linear infinite;
     display:none;
+    pointer-events:none;
 }
 
 @keyframes blink {

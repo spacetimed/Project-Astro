@@ -9,6 +9,7 @@ var ctx;
 var GLOBAL_timestamp = 0;
 var currentFrameTime = 0;
 var lastFrameTimestamp = 0;
+var bg = {};
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
@@ -18,7 +19,10 @@ var SPEED = 0; //player speed (pixels per second)
 var levels = {
     'active_level' : false,
     1 : {'speed' : 400},
-    2 : {'speed' : 1000},
+    2 : {'speed' : 800},
+    3 : {'speed' : 800},
+    4 : {'speed' : 800},
+    5 : {'speed' : 800},
 };
 
 var movement = {};
@@ -48,7 +52,6 @@ var opponentModel = {};
 var beamModel = {};
 var beamModelY = {};
 var fireballModel = {};
-
 var resources = {};
 resources.crosshair = imagePath + 'crosshair.png';
 resources.marker = imagePath + 'hitmarker.png';
@@ -59,12 +62,10 @@ resources.beamModelY = imagePath + 'beam_animation_y.png';
 resources.fireballModel = imagePath + 'fireball_animation.png';
 
 var abilities = {};
-
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
 abilities[0].dmg = 5;
-
 abilities[1] = {};
 abilities[1].name = 'beam';
 abilities[1].active = false;
@@ -74,7 +75,6 @@ abilities[1].firing = false;
 
 var pendingClick = false;
 var lastClickAt = 0;
-
 var cursorPos = {};
 cursorPos.x = 0;
 cursorPos.y = 0;
@@ -107,24 +107,17 @@ function welcomeToAstro()
 function isValidBoundary(direction)
 {
     if( (direction == 'moveUp') && (player.y > (player.y_size / 2)) )
-    {
         return true;
-    }
 
     if( (direction == 'moveDown') && (player.y < GAME_HEIGHT - (player.y_size / 2)) )
-    {
         return true;
-    }
 
     if( (direction == 'moveRight') && (player.x < GAME_WIDTH - (player.x_size / 2) ) )
-    {
         return true;
-    }
 
     if( (direction == 'moveLeft') && (player.x > (player.x_size / 2)) )
-    {
         return true;
-    }
+        
     return false;
 }
 
@@ -394,12 +387,7 @@ let particleT = 0;
 let particles = {};
 function renderParticles() //https://github.com/FFFFFF-base16/Floatr
 {
-    let bg = {};
-    bg.canvas = document.getElementById('gameBackdrop');
-    bg.ctx = bg.canvas.getContext('2d');
-    bg.canvas.width = GAME_WIDTH;
-    bg.canvas.height = GAME_HEIGHT;
-    bg.particleCount = 30;
+    bg.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     let g = 0.05;
     if(particleInit)
     {
@@ -431,6 +419,12 @@ function renderParticles() //https://github.com/FFFFFF-base16/Floatr
 
 function boot()
 {
+
+    canvas = document.getElementById('gameContainer');
+    ctx = canvas.getContext('2d');
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
+
     crosshair = new Image();
     marker = new Image();
     playerModel = new Image();
@@ -495,7 +489,6 @@ function boot()
     resources.container.prepend(resources.abilityContainer);
     resources.container.prepend(resources.infoBar);
     resources.container.prepend(resources.newLevelOverlay);
-
     abilities[0].element = resources.ability0;
     abilities[1].element = resources.ability1;
 
@@ -513,7 +506,14 @@ function boot()
     resources.ability1.addEventListener('click', () => {
         handleAbilityClick(1);
     });
-    
+
+    bg.canvas = document.getElementById('gameBackdrop');
+    bg.ctx = bg.canvas.getContext('2d');
+    bg.canvas.width = GAME_WIDTH;
+    bg.canvas.height = GAME_HEIGHT;
+    bg.particleCount = 30;
+    bg.canvas.style.display = 'block';
+
     initialized = true;
     welcomeToAstro();
 }
@@ -740,9 +740,9 @@ function initializeLevel()
     nextLevel();
 }
 
-ActiveLevelOverlay = false;
-LastLevelOverlay = 0;
-LastLevelInit = false;
+var ActiveLevelOverlay = false;
+var LastLevelInit = false;
+var LastLevelOverlay = 0;
 function renderLevelOverlay()
 {
     if(!ActiveLevelOverlay)
@@ -776,13 +776,17 @@ function nextLevel()
     {
         SPEED = levels[levels['active_level']].speed;
         opponent.HP = 100;
-        resources.infoBarLevel.innerText, 
-            resources.newLevelOverlay.innerText = 'LEVEL ' + levels['active_level'];
+        resources.infoBarLevel.innerText = resources.newLevelOverlay.innerText = 'LEVEL ' + levels['active_level'];
 
         ActiveLevelOverlay = true;
         LastLevelOverlay = 0;
         LastLevelInit = false;
 
+        if(levels['active_level'] > 1)
+        {
+            bg.canvas.style.filter = 'hue-rotate(' + (levels['active_level'] * 5) + 'deg)';
+        }
+        
         logger('Level ' + levels['active_level']);
     } else {
         console.log('DNE');
@@ -796,14 +800,11 @@ function astro(timestamp)
     GLOBAL_timestamp = timestamp;
     currentFrameTime = (timestamp - lastFrameTimestamp); 
     lastFrameTimestamp = timestamp;
-
-    canvas = document.getElementById('gameContainer');
-    ctx = canvas.getContext('2d');
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
+    
     if(!initialized)
         boot();
+    
+    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     
     renderFramerate();
     renderGameTimer();
