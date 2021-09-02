@@ -12,8 +12,14 @@ var lastFrameTimestamp = 0;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
-const SPEED = 400; //player speed (pixels per second)
 const imagePath = 'images/';
+var SPEED = 0; //player speed (pixels per second)
+
+var levels = {
+    'active_level' : false,
+    1 : {'speed' : 400},
+    2 : {'speed' : 1000},
+};
 
 var movement = {};
 movement.move_posY = false;
@@ -62,8 +68,8 @@ abilities[0].dmg = 5;
 abilities[1] = {};
 abilities[1].name = 'beam';
 abilities[1].active = false;
-abilities[1].dmg = 4; 
-abilities[1].dmgRate = 0.5; //2 dmg per 1.0s
+abilities[1].dmg = 20; 
+abilities[1].dmgRate = 0.1; //2 dmg per 1.0s
 abilities[1].firing = false;
 
 var pendingClick = false;
@@ -227,6 +233,10 @@ function mouseUpHandler(e)
 function applyDamage(player_obj, amt)
 {
     player_obj.HP -= amt;
+    if(player_obj.HP <= 0)
+    {
+        nextLevel();
+    }
     updateHudElements();
 }
 
@@ -451,6 +461,7 @@ function boot()
     resources.infoBar = document.createElement('div');
     resources.infoBarTime = document.createElement('span');
     resources.infoBarLevel = document.createElement('span');
+    resources.newLevelOverlay = document.createElement('div');
     resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
@@ -464,10 +475,12 @@ function boot()
     resources.infoBar.className = 'astroInfoBar';
     resources.infoBarTime.className = 'astroInfoBarTime';
     resources.infoBarLevel.className = 'astroInfoBarLevel';
+    resources.newLevelOverlay.className = 'astroNewLevelOverlay';
     resources.stats1HP.innerText = 'HP 100/100';
     resources.stats2HP.innerText = 'ENEMY HP 100/100';
     resources.infoBarTime.innerText = '00:00:00';
     resources.infoBarLevel.innerText = 'LEVEL 1 -';
+    resources.newLevelOverlay.innerText = 'LEVEL 1';
     resources.abilityContainer.append(resources.ability0);
     resources.abilityContainer.append(resources.ability1);
     resources.stats2.append(resources.stats2HP);
@@ -481,6 +494,7 @@ function boot()
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
     resources.container.prepend(resources.infoBar);
+    resources.container.prepend(resources.newLevelOverlay);
 
     abilities[0].element = resources.ability0;
     abilities[1].element = resources.ability1;
@@ -721,6 +735,61 @@ function rand(min, max) { //function from MDN
     return Math.floor(Math.random() * (max - min) + min);
 }
 
+function initializeLevel()
+{
+    nextLevel();
+}
+
+ActiveLevelOverlay = false;
+LastLevelOverlay = 0;
+LastLevelInit = false;
+function renderLevelOverlay()
+{
+    if(!ActiveLevelOverlay)
+        return;
+
+    const OverlayDuration = 2000;
+
+    if(LastLevelOverlay == 0)
+    {
+        LastLevelOverlay = GLOBAL_timestamp;
+    }
+
+    if(GLOBAL_timestamp - LastLevelOverlay <= OverlayDuration)
+    {
+        if(!LastLevelInit)
+        {
+            LastLevelOverlay = GLOBAL_timestamp;
+            resources.newLevelOverlay.style.display = 'block';
+            LastLevelInit = true;
+        }
+    } else {
+        resources.newLevelOverlay.style.display = 'none';
+        ActiveLevelOverlay = false;
+    }
+}
+
+function nextLevel()
+{
+    levels['active_level'] = (!levels['active_level']) ? 1 : levels['active_level'] + 1;
+    if(levels['active_level'] in levels)
+    {
+        SPEED = levels[levels['active_level']].speed;
+        opponent.HP = 100;
+        resources.infoBarLevel.innerText, 
+            resources.newLevelOverlay.innerText = 'LEVEL ' + levels['active_level'];
+
+        ActiveLevelOverlay = true;
+        LastLevelOverlay = 0;
+        LastLevelInit = false;
+
+        logger('Level ' + levels['active_level']);
+    } else {
+        console.log('DNE');
+        //game over
+    }
+}
+
 function astro(timestamp)
 { 
     timestamp = timestamp || 0;
@@ -739,6 +808,7 @@ function astro(timestamp)
     renderFramerate();
     renderGameTimer();
     renderParticles();
+    renderLevelOverlay();
 
     if(abilityAnimationQueues.fireball.queued)
         showFireballAnimation();
@@ -750,6 +820,9 @@ function astro(timestamp)
         fireAbility(a, cursorPos.x, cursorPos.y);
     }
 
+    if(!levels['active_level'])
+        initializeLevel();
+    
     handleOpponentMovement();
     renderOpponent();
     handleMovement();

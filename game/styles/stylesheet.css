@@ -140,6 +140,10 @@ body {
     top:5%;
 }
 
+.astroContainer .astroHud .astroStats1 {
+    opacity:0;
+}
+
 .astroContainer .astroHud .astroStats2 {
     color:red;
 }
@@ -193,4 +197,23 @@ h1 {
 .astroContainer .astroInfoBar .astroInfoBarTime {
     margin-right:10px;
     font-weight:400;
+}
+
+.astroContainer .astroNewLevelOverlay {
+    width:100%;
+    position:absolute;
+    top:200px;
+    left:0;
+    z-index:18;
+    font-size:24px;
+    font-weight:700;
+    color:#fff;
+    animation:blink 0.5s linear infinite;
+    display:none;
+}
+
+@keyframes blink {
+    50% {
+        opacity:0;
+    }
 }
