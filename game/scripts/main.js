@@ -69,7 +69,7 @@ var abilities = {};
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
-abilities[0].dmg = 20;
+abilities[0].dmg = 25;
 abilities[0].cd = 2;
 abilities[0].lastUsed = 0;
 abilities[0].avail = true;
@@ -82,7 +82,7 @@ abilities[1].dmgRate = 0.1; //2 dmg per 1.0s
 abilities[1].firing = false;
 abilities[1].energy = 100;
 abilities[1].energyDrainRate = 1.8;
-abilities[1].energyGainRate = 2;
+abilities[1].energyGainRate = 2.5;
 abilities[1].energyGainTime = 0.5;
 
 var pendingClick = false;
@@ -778,7 +778,7 @@ function handleOpponentMovement()
     {
         if(opponentMovementQueue['x'] > 0)
         {
-            if(Math.abs(opponentMovementQueue['x'] - opponent.x) > 2)
+            if(Math.abs(opponentMovementQueue['x'] - opponent.x) > 10)
             {
                 if(opponentMovementQueue['x'] > opponent.x)
                     opponent.x += OpponentSpeed * currentFrameTime / 1000;
@@ -790,7 +790,7 @@ function handleOpponentMovement()
         }
         if(opponentMovementQueue['y'] > 0)
         {
-            if(Math.abs(opponentMovementQueue['y'] - opponent.y) > 2)
+            if(Math.abs(opponentMovementQueue['y'] - opponent.y) > 10)
             {
                 if(opponentMovementQueue['y'] > opponent.y)
                     opponent.y += OpponentSpeed * currentFrameTime / 1000;
@@ -920,7 +920,7 @@ function nextLevel()
     {
         SPEED = levels[levels['active_level']].speed;
         opponent.HP = 100;
-        resources.infoBarLevel.innerText = resources.newLevelOverlay.innerText = 'LEVEL ' + levels['active_level'];
+        resources.infoBarLevel.innerText = resources.newLevelOverlay.innerText = 'LEVEL ' + levels['active_level'] + '/7';
         ActiveLevelOverlay = true;
         LastLevelOverlay = 0;
         LastLevelInit = false;
