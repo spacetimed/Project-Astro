@@ -21,6 +21,11 @@ var levels = {
     'active_level' : false,
     1 : {'speed' : 400},
     2 : {'speed' : 500},
+    3 : {'speed' : 600},
+    4 : {'speed' : 800},
+    5 : {'speed' : 1000},
+    6 : {'speed' : 1200},
+    7 : {'speed' : 2000},
 };
 
 var movement = {};
@@ -64,21 +69,21 @@ var abilities = {};
 abilities[0] = {};
 abilities[0].name = 'fireball';
 abilities[0].active = false;
-abilities[0].dmg = 18;
-abilities[0].cd = 3;
+abilities[0].dmg = 20;
+abilities[0].cd = 2;
 abilities[0].lastUsed = 0;
 abilities[0].avail = true;
 
 abilities[1] = {};
 abilities[1].name = 'beam';
 abilities[1].active = false;
-abilities[1].dmg = 20; 
+abilities[1].dmg = 2; 
 abilities[1].dmgRate = 0.1; //2 dmg per 1.0s
 abilities[1].firing = false;
 abilities[1].energy = 100;
-abilities[1].energyDrainRate = 1;
-abilities[1].energyGainRate = 10;
-abilities[1].energyGainTime = 0.5; //1 s gain 2 energy
+abilities[1].energyDrainRate = 1.8;
+abilities[1].energyGainRate = 2;
+abilities[1].energyGainTime = 0.5;
 
 var pendingClick = false;
 var lastClickAt = 0;
@@ -648,7 +653,7 @@ function renderGameTimer()
         abilities[1].energy += abilities[1].energyGainRate;
         if(abilities[1].energy > 100)
             abilities[1].energy = 100;
-        resources.statsEnergy.innerText = abilities[1].energy;
+        resources.statsEnergy.innerText = Math.floor(abilities[1].energy);
         lastEnergyRaise = GLOBAL_timestamp;
     }
 }
@@ -826,6 +831,8 @@ function nextLevel()
         ActiveLevelOverlay = true;
         LastLevelOverlay = 0;
         LastLevelInit = false;
+        abilities[1].energy = 100;
+        resources.statsEnergy.innerText = '100';
         if(levels['active_level'] > 1)
         {
             bg.canvas.style.filter = 'hue-rotate(' + (levels['active_level'] * 5) + 'deg)';
