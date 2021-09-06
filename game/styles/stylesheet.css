@@ -24,12 +24,33 @@ body {
     position:absolute;
     top:0;
     left:0;
-    z-index:20;
-    background-image:url('../images/splashscreen.png');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size:cover;
+    z-index:1000;
     animation:flashScreen 0.2s ease-in infinite;
+    display:flex;
+    flex-direction:column;
+    justify-content:end;
+    background-image:url('../images/alt_backdrop.png');
+    background-repeat:no-repeat;
+    background-position:center 10px;
+}
+
+.astroContainer .astroSplashscreen h1 {
+    color:#fff;
+    font-size:42px;
+    margin-bottom:160px;
+}
+
+.astroContainer .astroSplashscreen h3 {
+    color:#fff;
+    font-size:14px;
+    font-weight:400;
+    border-top:1px solid #fff;
+    height:150px;
+    text-align:left;
+    text-transform:uppercase;
+    padding-left:10px;
+    padding-top:10px;
+    box-sizing:border-box;
 }
 
 @keyframes flashScreen {
@@ -57,7 +78,6 @@ body {
     position:absolute;
     bottom:0;
     left:25px;
-    width:213px;
     height:112px;
     z-index:20;
     display:flex;
@@ -120,11 +140,11 @@ body {
     position:absolute;
     bottom:0;
     right:20px;
-    width:440px;
+    width:695px;
     height:60px;
     z-index:20;
     display:flex;
-    flex-direction:row;
+    flex-direction:row-reverse;
     box-sizing:border-box;
     text-align:left;
     justify-content:space-between;
@@ -133,7 +153,7 @@ body {
 }
 
 .astroContainer .astroHud .astroStats1, .astroContainer .astroHud .astroStats2 {
-    width:48%;
+    width:212px;
     background-image:url('../images/heart.png');
     background-repeat:no-repeat;
     background-position:10px 3px;
@@ -157,7 +177,7 @@ body {
 }
 
 .astroContainer .astroHud .astroStats1 {
-   /*  opacity:0; */
+    display:none;
 }
 
 .astroContainer .astroHud .astroStats2 {
@@ -167,6 +187,17 @@ body {
 .astroContainer .astroHud .astroStats2 .astroStats2Bar {
     background: linear-gradient(90deg, rgb(255, 0, 0) 100%, transparent 0%);
     border:2px solid #7f0000;
+}
+
+.astroContainer .astroHud .astroStatsEnergy {
+    color: #fff;
+    font-weight: bold;
+    margin-left: -67px;
+    margin-top: 19px;
+    font-size: 11px;
+    width: 54px;
+    height: 13px;
+    text-align: right;
 }
 
 h1 {
@@ -233,4 +264,62 @@ h1 {
     50% {
         opacity:0;
     }
+}
+
+.astroContainer .astroGameOver {
+    width:900px;
+    height:600px;
+    background-color:#000;
+    position:absolute;
+    top:0;
+    left:0;
+    z-index:100;
+    background-image:url('../images/alt_backdrop.png');
+    background-repeat:no-repeat;
+    background-position:top center;
+    color:#fff;
+    font-size:22px;
+    display:flex;
+    align-items:center;
+    justify-content:end;
+    flex-direction:column;
+    font-weight:700;
+    animation:flashScreen 0.4s ease-in infinite;
+    display:none;
+}
+
+.astroContainer .astroGameOver .astroGameOverHead {
+    animation:blink 0.5s linear infinite;
+}
+
+.astroContainer .astroGameOver .astroGameOverBody {
+    margin-top:60px;
+    font-size:16px;
+    font-weight:400;
+    width:100%;
+    padding-bottom:140px;
+    border-bottom:1px solid #fff;
+}
+
+.astroContainer .astroGameOver .astroGameOverBody .astroGameOverTime {
+    margin-top:10px;
+    font-weight:bold;
+    color:green;
+}
+
+.astroContainer .astroGameOver .astroGameOverButton {
+    font-weight: 400;
+    width: 238px;
+    height: 38px;
+    margin-top: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fff;
+    margin-bottom:90px;
+    cursor:pointer;
+}
+
+.astroContainer .astroGameOver .astroGameOverButton:hover {
+    background-color:rgba(255,255,255,0.1);
 }

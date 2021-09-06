@@ -75,6 +75,10 @@ abilities[1].active = false;
 abilities[1].dmg = 20; 
 abilities[1].dmgRate = 0.1; //2 dmg per 1.0s
 abilities[1].firing = false;
+abilities[1].energy = 100;
+abilities[1].energyDrainRate = 1;
+abilities[1].energyGainRate = 10;
+abilities[1].energyGainTime = 0.5; //1 s gain 2 energy
 
 var pendingClick = false;
 var lastClickAt = 0;
@@ -206,12 +210,18 @@ function fireAbility(a, x, y)
         handleCollisionDetection(a, x, y);
     } else if(a == 1)
     {
-        if(GLOBAL_timestamp - lastDamageProc >= (abilities[a].dmgRate * 1000))
+        if( (GLOBAL_timestamp - lastDamageProc >= abilities[a].dmgRate * 1000) && (abilities[a].energy > 0) )
         {
             cursorPos.last.x =  x;
             cursorPos.last.y =  y;
             handleCollisionDetection(a, x, y);
             lastDamageProc = GLOBAL_timestamp;
+            abilities[a].energy -= abilities[a].energyDrainRate;
+            if(abilities[a].energy < 0)
+                abilities[a].energy = 0;
+            resources.statsEnergy.innerText = Math.floor(abilities[a].energy);
+        } else if(abilities[0].energy <= 0) {
+            abilities[a].firing = false;
         }
     }
 }
@@ -458,10 +468,16 @@ function boot()
     resources.stats2 = document.createElement('div'); 
     resources.stats2bar = document.createElement('div'); 
     resources.stats2HP = document.createElement('span'); 
+    resources.statsEnergy = document.createElement('div');
     resources.infoBar = document.createElement('div');
     resources.infoBarTime = document.createElement('span');
     resources.infoBarLevel = document.createElement('span');
     resources.newLevelOverlay = document.createElement('div');
+    resources.gameOver = document.createElement('div');
+    resources.gameOverHead = document.createElement('div');
+    resources.gameOverBody = document.createElement('div');
+    resources.gameOverButton = document.createElement('div');
+    resources.gameOverTime = document.createElement('div');
     resources.abilityContainer.className = 'astroAbilityContainer';
     resources.ability0.className = 'astroAbility';
     resources.ability1.className = 'astroAbility';
@@ -471,34 +487,51 @@ function boot()
     resources.stats1HP.className = 'astroStats1HP';
     resources.stats2bar.className = 'astroStats2Bar';
     resources.stats2HP.className = 'astroStats2HP';
+    resources.statsEnergy.className = 'astroStatsEnergy';
     resources.stats1.className = 'astroStats1';
     resources.stats2.className = 'astroStats2';
     resources.infoBar.className = 'astroInfoBar';
     resources.infoBarTime.className = 'astroInfoBarTime';
     resources.infoBarLevel.className = 'astroInfoBarLevel';
     resources.newLevelOverlay.className = 'astroNewLevelOverlay';
-    resources.stats1HP.innerText = 'HP 100/100';
+    resources.gameOver.className = 'astroGameOver';
+    resources.gameOverHead.className = 'astroGameOverHead';
+    resources.gameOverBody.className = 'astroGameOverBody';
+    resources.gameOverButton.className = 'astroGameOverButton';
+    resources.gameOverTime.className = 'astroGameOverTime';
+    resources.stats1HP.innerText = 'ENERGY';
     resources.stats2HP.innerText = 'ENEMY HP 100/100';
+    resources.statsEnergy.innerText = '100';
     resources.infoBarTime.innerText = '00:00:00';
     resources.infoBarLevel.innerText = 'LEVEL 1 -';
     resources.newLevelOverlay.innerText = 'LEVEL 1';
     resources.ability0cd.innerText = '0';
     resources.ability0cd.style.display = 'none';
+    resources.gameOverHead.innerText = 'VICTORY!';
+    resources.gameOverBody.innerText = 'You completed the game!';
+    resources.gameOverButton.innerText = 'Play Again';
+    resources.gameOverTime.innerText = 'Your Time: 00:00:00';
+    resources.gameOver.append(resources.gameOverHead);
+    resources.gameOver.append(resources.gameOverBody);
+    resources.gameOver.append(resources.gameOverButton);
     resources.ability0.prepend(resources.ability0cd);
     resources.abilityContainer.append(resources.ability0);
     resources.abilityContainer.append(resources.ability1);
     resources.stats2.append(resources.stats2HP);
     resources.stats2.append(resources.stats2bar);
+    resources.hud.prepend(resources.statsEnergy);
     resources.hud.prepend(resources.stats2);
-    resources.stats1.append(resources.stats1HP);
-    resources.stats1.append(resources.stats1bar);
-    resources.hud.prepend(resources.stats1);
+    //resources.stats1.append(resources.stats1HP);
+    //resources.stats1.append(resources.stats1bar);
+    //resources.hud.prepend(resources.stats1);
     resources.infoBar.append(resources.infoBarLevel);
     resources.infoBar.append(resources.infoBarTime);
     resources.container.prepend(resources.hud);
     resources.container.prepend(resources.abilityContainer);
     resources.container.prepend(resources.infoBar);
     resources.container.prepend(resources.newLevelOverlay);
+    resources.gameOverBody.append(resources.gameOverTime);
+    resources.container.append(resources.gameOver);
     abilities[0].element = resources.ability0;
     abilities[1].element = resources.ability1;
 
@@ -514,6 +547,9 @@ function boot()
     });
     resources.ability1.addEventListener('click', () => {
         handleAbilityClick(1);
+    });
+    resources.gameOverButton.addEventListener('click', () => {
+        location.reload();
     });
 
     welcomeToAstro();
@@ -581,6 +617,7 @@ function formatTimer(n_int)
 
 var lastTimerRender = 0;
 var lastCdSecond = 0;
+var lastEnergyRaise = 0;
 function renderGameTimer() 
 {
     const UpdateSpeed = 50;
@@ -604,6 +641,15 @@ function renderGameTimer()
         resources.ability0.style.pointerEvents = 'auto';
         resources.ability0cd.style.display = 'none';
         resources.ability0cd.innerText = abilities[0].cd.toString();
+    }
+
+    if(Math.round(abilities[1].energy < 100) && (GLOBAL_timestamp - lastEnergyRaise >= abilities[1].energyGainTime * 1000) && (!abilities[1].firing))
+    {
+        abilities[1].energy += abilities[1].energyGainRate;
+        if(abilities[1].energy > 100)
+            abilities[1].energy = 100;
+        resources.statsEnergy.innerText = abilities[1].energy;
+        lastEnergyRaise = GLOBAL_timestamp;
     }
 }
 
@@ -786,9 +832,20 @@ function nextLevel()
         }
         logger('Level ' + levels['active_level']);
     } else {
-        console.log('DNE');
-        //game over
+        handleGameOver();
     }
+}
+
+function handleGameOver()
+{
+    gameInProgress = false;
+    resources.gameOver.style.display = 'flex';
+    resources.container.style.cursor = 'default';
+    var s = (Math.floor(GLOBAL_timestamp / 1000));
+    const m = formatTimer(Math.floor(s / 60));
+    const ms = formatTimer(Math.floor((GLOBAL_timestamp / 1000 - s) * 100));
+    s = formatTimer(s % 60);
+    resources.gameOverTime.innerText = 'Your Time: ' + (m + ':' + s + ':' + ms);
 }
 
 function astro(timestamp)
@@ -802,6 +859,7 @@ function astro(timestamp)
         boot();
 
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
     renderFramerate();
     renderGameTimer();
     renderParticles();
@@ -810,7 +868,7 @@ function astro(timestamp)
     if(abilityAnimationQueues.fireball.queued)
         showFireballAnimation();
 
-    if(abilities[1].firing)
+    if(abilities[1].firing && abilities[1].energy > 0)
     {
         showBeamAnimation();
         fireAbility(a, cursorPos.x, cursorPos.y);
@@ -830,5 +888,6 @@ function astro(timestamp)
             renderCrosshair();
     }
 
-    window.requestAnimationFrame(astro);
+    if(gameInProgress)
+        window.requestAnimationFrame(astro);
 }
