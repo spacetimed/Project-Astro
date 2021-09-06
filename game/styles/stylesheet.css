@@ -205,7 +205,7 @@ h1 {
     text-transform:uppercase;
     font-size:12px;
     padding:0;
-    margin:40px;
+    margin-bottom:0px;
 }
 
 .astroContainer_stats {
@@ -218,6 +218,7 @@ h1 {
     font-weight:700;
     padding-right:10px;
     box-sizing: border-box;
+    user-select:none;
 }
 
 .astroContainer .astroInfoBar {
@@ -322,4 +323,111 @@ h1 {
 
 .astroContainer .astroGameOver .astroGameOverButton:hover {
     background-color:rgba(255,255,255,0.1);
+}
+
+.astroHowToPlay {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    width: 20px;
+    margin: 0 auto;
+    border: 1px solid #fff;
+    padding: 2px;
+    background-color: #7c7cf345;
+    position: relative;
+    left: -439px;
+    bottom: 18px;
+    cursor:pointer;
+    user-select:none;
+}
+
+.astroCredits {
+    margin-top:5px;
+    color:#fff;
+    text-decoration:none;
+    font-size:11px;
+}
+
+.astroCredits span {
+    display:inline-block;
+    letter-spacing:-1px;
+    font-family:'Tahoma';
+    filter:blur(0.4px);
+    font-size:8px;
+}
+
+.astroCredits a {
+    text-decoration:none;
+    color:inherit;
+    color: #7c7cf3;
+}
+
+.astroHowToPlayPanel {
+    color:#fff;
+    width:900px;
+    margin:0 auto;
+    border-top:1px solid #fff;
+    border-bottom:1px solid #fff;
+    padding-top:20px;
+    box-sizing:border-box;
+    text-align:left;
+    margin-bottom:40px;
+    text-align:center;
+}
+
+.astroHowToPlayPanel h1 {
+    font-size:14px;
+    font-weight:400;
+    width:100%;
+    text-align:center;
+}
+
+.astroHowToPlayPanel h2 {
+    margin:10px;
+    margin-left:0px;
+    font-size:18px;
+    font-family:'Arial';
+    text-align:left;
+}
+
+
+.astroHowToPlayPanel section {
+    margin-top:20px;
+    text-align:left;
+}
+
+.astroHowToPlayPanel section:first-of-type {
+    margin-top:0px;
+}
+
+.astroHowToPlayPanel p {
+    margin:0;
+    margin-left:20px;
+    font-size:14px;
+    font-family:'Arial';
+    text-align:left;
+}
+
+.astroHowToPlayPanel div.key {
+    background-color: rgb(255, 255, 255);
+    width: 26px;
+    height: 22px;
+    color: #000;
+    border: 1px solid #6d6d6d;
+    border-radius: 4px;
+    display: inline-block;
+    padding-top: 5px;
+    text-align: center;
+    box-shadow: inset -1px -1px 0px 3px #bdbdbd;
+    font-weight: 700;
+    margin-left: 14px;
+}
+
+.astroHowToPlayPanel a.astroHowToPanel_close {
+    display:block;
+    margin-top:30px;
+    margin-bottom:30px;
+    color: #7c7cf3;
+    font-weight:700;
+    cursor:pointer;
 }

@@ -102,7 +102,100 @@ abilityAnimationQueues.fireball.y = 0;
 
 window.onload = function() {
     document.getElementsByClassName('astroSplashscreen')[0].style.display = 'none';
+
+    let helpButton = document.getElementsByClassName('astroHowToPlay')[0];
+    helpButton.addEventListener('click', () => {
+        helpFunction();
+    });
+
     astro(); 
+}
+
+function helpFunction() {
+    showHelpContent();
+}
+
+function showHelpContent() {
+    let helpContainer = document.getElementsByClassName('astroHowToPlayContainer')[0];
+    let helpContent = document.createElement('div');
+    let titles = ['Movement', 'Abilities', 'Levels', 'Goal'];
+    let mainHeading = document.createElement('h1');
+    let closeButton = document.createElement('a');
+    let helpButton = document.getElementsByClassName('astroHowToPlay')[0];
+    helpContent.className = 'astroHowToPlayPanel';
+    closeButton.className = 'astroHowToPanel_close';
+    mainHeading.innerText = 'How to play Project Astro';
+    closeButton.innerText = 'Close';
+    helpContent.append(mainHeading);
+    titles.forEach((title) => {
+        let section = document.createElement('section');
+        let head = document.createElement('h2');
+        head.innerText = title;
+        section.append(head);
+        if(title == 'Movement')
+        {
+            let keys = ['W', 'A', 'S', 'D'];
+            keys.forEach((key) => {
+                let keyElement = document.createElement('div');
+                keyElement.className = 'key';
+                keyElement.innerText = key;
+                section.append(keyElement);
+            });
+        }
+        if(title == 'Abilities')
+        {
+            let paragraph = document.createElement('p');
+            let img1 = new Image(16, 16);
+            let img2 = new Image(16, 16);
+            let ability1_info = document.createElement('b');
+            let ability2_info = document.createElement('b');
+            let ability1_desc = document.createElement('span');
+            let ability2_desc = document.createElement('span');
+
+            img1.src = 'images/asteroid.png';
+            img2.src = 'images/beam.png';
+            ability1_info.innerText = ' Asteroid: ';
+            ability1_desc.innerText = 'A high damage skill shot on a 2 second cooldown.';
+            ability2_info.innerText = ' Laser: ';
+            ability2_desc.innerText = 'A tracking-based laser powered by energy that drains upon use, and rebuilds over time.';
+
+            paragraph.append(img1);
+            paragraph.append(ability1_info);
+            paragraph.append(ability1_desc);
+            paragraph.append(document.createElement('br'));
+            paragraph.append(img2);
+            paragraph.append(ability2_info);
+            paragraph.append(ability2_desc);
+            section.append(paragraph);
+        }
+        if(title == 'Levels')
+        {
+            let paragraph = document.createElement('p');
+            paragraph.innerText = 'There are 7 levels, with overall speed of both players increasing incrementally.';
+            section.append(paragraph);
+        }
+        if(title == 'Goal')
+        {
+            let paragraph = document.createElement('p');
+            paragraph.innerText = 'The goal of Project Astro is to beat all 7 levels as fast as possible. Levels increasingly become more difficult, as overall speed intensifies.';
+            section.append(paragraph);
+        }
+        helpContent.append(section);
+    });
+    helpContent.append(closeButton);
+    helpContainer.append(helpContent);
+    closeButton.addEventListener('click', () => {
+        helpFunction = () => {
+            showHelpContent();
+        };
+        helpContent.style.display = 'none';
+    });
+    helpFunction = () => { 
+        helpFunction = () => {
+            showHelpContent();
+        };
+        helpContent.style.display = 'none'; 
+    };
 }
 
 function logger(message)
