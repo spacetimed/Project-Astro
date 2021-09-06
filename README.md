@@ -10,6 +10,9 @@ Currently the game features no sound, although sound is expected to be added eve
 ## Preview
 ![Preview Image](/game/images/preview.png)
 
+**Play the game now through GitHub Pages:**
+**https://ffffff-base16.github.io/Project-Astro/**
+
 -----
 ## How To Play
 ### **Movement**
